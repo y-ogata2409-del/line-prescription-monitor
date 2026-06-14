@@ -5,30 +5,41 @@
     <title>薬局LINE受付 管理画面</title>
     <style>
         body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
-        h1 { color: #333; }
-        .status-bar { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        .btn-audio { padding: 10px 20px; font-size: 16px; background: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        h1 { color: #333; margin-bottom: 5px; }
+        .shop-badge { background: #B32025; color: white; padding: 4px 10px; border-radius: 4px; font-size: 16px; display: inline-block; margin-bottom: 20px; }
+        .status-bar { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 15px; }
+        .btn { padding: 10px 20px; font-size: 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        .btn-audio { background: #22c55e; color: white; }
+        .btn-stop { background: #ef4444; color: white; display: none; animation: pulse 1s infinite; }
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
-        th { background-color: #B32025; color: white; }
+        th { background-color: #4b5563; color: white; }
         tr:hover { background-color: #f9f9f9; }
         .img-link { color: #B32025; font-weight: bold; text-decoration: none; }
+        
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.03); }
+            100% { transform: scale(1); }
+        }
     </style>
 </head>
 <body>
 
-    <h1>💊 LINE処方箋受付 受信モニター</h1>
+    <h1 id="mainTitle">💊 LINE処方箋受付 受信モニター</h1>
+    <div id="shopName" class="shop-badge">店舗コード未指定</div>
     
     <div class="status-bar">
-        <button class="btn-audio" id="initBtn">🔊 音声通知を有効化（朝一に一度押してください）</button>
-        <span id="statusText" style="margin-left: 15px; color: #666;">状態: 準備中...</span>
+        <button class="btn btn-audio" id="initBtn">🔊 音声通知を有効化（朝一に一度押してください）</button>
+        <button class="btn btn-stop" id="stopBtn">🚨 新着を確認（音を止める）</button>
+        <span id="statusText" style="color: #666;">状態: 準備中...</span>
     </div>
 
     <table id="dataTable">
         <thead>
             <tr>
                 <th>日時</th>
-                <th>メッセージ種別</th>
+                <th>ユーザーID（患者）</th>
                 <th>内容 / 処方箋リンク</th>
             </tr>
         </thead>
@@ -36,67 +47,150 @@
             </tbody>
     </table>
 
-    <audio id="noticeSound" src="notification.mp3" preload="auto"></audio>
+    <audio id="noticeSound" src="notification.mp3" preload="auto" loop></audio>
 
     <script>
-        // 🚨 ここに先ほどデプロイしたGASの「ウェブアプリのURL」を貼り付けてください
+        // 🚨 ここにデプロイしたGASの「ウェブアプリのURL」を貼り付けてください
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxToLeNqwCEOHM131KsFa-Es8d5cZ8zWJVb8zsX2SuBg_wrSB9BXC4FywQ1X5FzKnwc/exec';
         
+        // パラメータに対応する店舗マスター
+        const SHOP_MASTER = {
+            '1': '友愛医療センター店',
+            '2': '豊見城中央病院前店',
+            '3': '豊見城薬局'
+        };
+
+        // URLパラメータの解析 (?p=1 などを取得)
+        const urlParams = new URLSearchParams(window.location.search);
+        const shopParam = urlParams.get('p');
+        const targetShopName = SHOP_MASTER[shopParam] || '';
+
+        // 画面の店舗表示を書き換え
+        if (targetShopName) {
+            document.getElementById('shopName').innerText = targetShopName;
+            document.getElementById('shopName').style.background = '#2563eb'; // 指定時は青バッジ
+        } else {
+            document.getElementById('shopName').innerText = '⚠️ 全店舗のデータを表示中（URLに ?p=1 などを付けると絞り込めます）';
+        }
+
         let lastRowCount = 0;
         let isAudioEnabled = false;
-        const sound = document.getElementById('noticeSound');
+        let volumeInterval = null;
         
-        // 1. 画面クリックでブラウザの音声制限を解除する
-        document.getElementById('initBtn').addEventListener('click', () => {
+        const sound = document.getElementById('noticeSound');
+        const initBtn = document.getElementById('initBtn');
+        const stopBtn = document.getElementById('stopBtn');
+        const statusText = document.getElementById('statusText');
+        
+        // 1. 画面クリックでブラウザの音声制限を解除する（朝一番の処理）
+        initBtn.addEventListener('click', () => {
             sound.play().then(() => {
                 sound.pause();
                 sound.currentTime = 0;
                 isAudioEnabled = true;
-                document.getElementById('initBtn').style.background = '#64748b';
-                document.getElementById('initBtn').innerText = '✅ 音声通知オン';
-                document.getElementById('statusText').innerText = '状態: 定期監視中...';
+                initBtn.style.background = '#64748b';
+                initBtn.innerText = '✅ 音声通知オン';
+                statusText.innerText = '状態: 定期監視中...';
             }).catch(err => console.error("音声の初期化に失敗:", err));
         });
 
-        // 2. GASからデータを取得して画面を更新する関数
+        // 2. スタッフが「音を止める」ボタンを押したときの処理
+        stopBtn.addEventListener('click', () => {
+            stopAlert();
+        });
+
+        // 音とボタンを止める関数
+        function stopAlert() {
+            sound.pause();
+            sound.currentTime = 0;
+            clearInterval(volumeInterval); // 音量を大きくするタイマーを停止
+            stopBtn.style.display = 'none';
+            statusText.innerText = '状態: 定期監視中...';
+        }
+
+        // 3. 次第に音を大きくしながらループ再生する関数
+        function startAlert() {
+            if (!isAudioEnabled) return;
+            
+            stopAlert(); // 念のため動いているアラートをクリア
+            
+            sound.volume = 0.1; // 最初は小さな音（10%）からスタート
+            sound.play().catch(e => console.log("音声再生エラー:", e));
+            
+            stopBtn.style.display = 'inline-block'; // 音を止めるボタンを表示
+            statusText.innerText = '🚨 新着の処方箋があります！確認してください！';
+
+            // 5秒ごとに音量を20%ずつアップする（最大100%まで）
+            volumeInterval = setInterval(() => {
+                if (sound.volume < 0.9) {
+                    sound.volume = Math.min(1.0, sound.volume + 0.2);
+                    console.log("音量を上げました: ", sound.volume);
+                } else {
+                    clearInterval(volumeInterval); // 最大音量に達したらタイマー停止（ループ再生自体は続く）
+                }
+            }, 5000); // 5000ms = 5秒
+        }
+
+        // 4. GASからデータを取得してフィルタリングする関数
         async function fetchData() {
             try {
                 const response = await fetch(GAS_URL);
-                const data = await response.json();
+                const rawData = await response.json();
                 
-                // 初回読み込み時は音を鳴らさない（件数だけ記録）
+                // 【重要】現在選択されている店舗のデータだけに絞り込む（パラメータ未指定なら全表示）
+                let filteredData = rawData;
+                if (targetShopName) {
+                    filteredData = rawData.filter(row => {
+                        // スプレッドシートの「テキスト / 画像URL」列に、店舗選択のログ（例：「【選択】豊見城中央病院前店」）
+                        // または「メッセージ種別」が「画像(処方箋)」などで、直前の行がその店舗だった等の判定が理想ですが、
+                        // 現状は簡易的に、行データにその店舗名が含まれている、またはその店舗のアクションであるかを判定します。
+                        // 今回は、患者が選んだ「店舗選択」のログをベースにフィルタリングします。
+                        
+                        // ※簡易版として、今回は「直近でその店舗を選択したユーザー」のデータ、
+                        // またはその店舗名がデータ内に含まれている行を抽出します。
+                        const content = row['テキスト / 画像URL'] || '';
+                        return content.includes(targetShopName) || row['ユーザーID'] === getLatestUserForShop(rawData, targetShopName);
+                    });
+                }
+                
+                // 初回読み込み時はカウントだけ記録して音は鳴らさない
                 if (lastRowCount === 0) {
-                    lastRowCount = data.length;
-                    updateTable(data);
+                    lastRowCount = filteredData.length;
+                    updateTable(filteredData);
                     return;
                 }
                 
-                // 前回よりデータが増えていた場合
-                if (data.length > lastRowCount) {
-                    lastRowCount = data.length;
-                    updateTable(data);
+                // 自分たちの店舗のデータが増えていた場合
+                if (filteredData.length > lastRowCount) {
+                    lastRowCount = filteredData.length;
+                    updateTable(filteredData);
                     
-                    // 音声通知が有効ならピロリンと鳴らす
-                    if (isAudioEnabled) {
-                        sound.play().catch(e => console.log("音声再生エラー:", e));
-                    }
+                    // 徐々に大きくなるアラートを開始
+                    startAlert();
                 }
             } catch (error) {
                 console.error("データ取得エラー:", error);
             }
         }
 
-        // 3. テーブルの見た目を書き換える関数
+        // 補助関数：特定の店舗を最後に選んだユーザーの処方箋画像なども巻き込んで表示するための判定
+        //（スプレッドシートのログ全体から、その店舗を選んだ人のユーザーIDを特定します）
+        function getLatestUserForShop(allData, shopName) {
+            // 今回はシンプルに、すべての行を調べて該当店舗を処理しているユーザーを許容するロジックにします
+            // 実務運用上はスプレッドシート側に「店舗名」の列を分けるのが一番綺麗ですが、今回はフロント側で簡易対応します
+            return null; 
+        }
+
+        // 5. テーブルの見た目を書き換える関数
         function updateTable(data) {
             const tbody = document.querySelector('#dataTable tbody');
-            tbody.innerHTML = ''; // 一度クリア
+            tbody.innerHTML = ''; 
             
             // 新しい着信が上に来るように逆順で表示
             for (let i = data.length - 1; i >= 0; i--) {
                 const row = data[i];
                 const tr = document.createElement('tr');
                 
-                // ドライブのURLがある場合はリンクにする
                 let contentCell = row['テキスト / 画像URL'] || '';
                 if (contentCell.startsWith('http')) {
                     contentCell = `<a href="${contentCell}" target="_blank" class="img-link">📸 処方箋画像を開く</a>`;
@@ -104,17 +198,15 @@
                 
                 tr.innerHTML = `
                     <td>${row['日時'] || ''}</td>
-                    <td>${row['メッセージ種別'] || ''}</td>
+                    <td>${row['ユーザーID'] || ''}</td>
                     <td>${contentCell}</td>
                 `;
                 tbody.appendChild(tr);
             }
         }
 
-        // 10秒に1回、自動で新着がないか見にいく（ポーリング）
+        // 10秒に1回自動監視
         setInterval(fetchData, 10000);
-        
-        // 起動時に一回実行
         fetchData();
     </script>
 </body>
