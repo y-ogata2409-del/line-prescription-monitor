@@ -12,12 +12,36 @@
         .btn-audio { background: #22c55e; color: white; }
         .btn-check { background: #ef4444; color: white; padding: 6px 12px; font-size: 14px; border-radius: 4px; }
         .btn-check:hover { background: #dc2626; }
-        .btn-mute-master { background: #ea580c; color: white; display: none; margin-left: 10px; padding: 8px 16px; font-size: 15px; }
+        
+        /* 🚨 【改善】とりあえず音を止めるボタンのスタイルとアニメーション設定 */
+        .btn-mute-master { 
+            background: #ea580c; 
+            color: white; 
+            display: none; 
+            margin-left: 10px; 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            box-shadow: 0 4px 6px rgba(234, 88, 12, 0.3);
+            transition: transform 0.1s ease;
+        }
         .btn-mute-master:hover { background: #c2410c; }
+        
+        /* ボタンがピコピコ大きくなったり小さくなったりするアニメーション用のクラス */
+        .pulse-animation {
+            animation: pulseEffect 1.2s infinite ease-in-out;
+        }
+
+        /* 動きのルール：等倍(1倍) → 1.1倍に大きくなる → 1倍に戻る を繰り返す */
+        @keyframes pulseEffect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 6px 12px rgba(234, 88, 12, 0.5); }
+            100% { transform: scale(1); }
+        }
+
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #4b5563; color: white; }
-        tr.done { background-color: #f3f4f6; color: #9ca3af; } /* 確認済みの行のスタイル */
+        tr.done { background-color: #f3f4f6; color: #9ca3af; }
         .img-link { background: #B32025; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; }
         .img-link:hover { background: #991b1b; }
     </style>
@@ -49,7 +73,6 @@
     <audio id="noticeSound" src="notification.mp3" preload="auto" loop></audio>
 
     <script>
-        // 🚨 ここにデプロイしたGASの「ウェブアプリのURL」を貼り付けてください
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxToLeNqwCEOHM131KsFa-Es8d5cZ8zWJVb8zsX2SuBg_wrSB9BXC4FywQ1X5FzKnwc/exec';
         
         const SHOP_MASTER = { '1': '友愛医療センター店', '2': '豊見城中央病院前店', '3': '豊見城薬局' };
@@ -66,15 +89,13 @@
         let muteUntilTime = 0; 
         let globalHasUnread = false; 
         
-        // 🕒 【猶予時間の設定】現在はテスト用1分（60000ms）。実務に合わせて「300000（5分）」等にしてください。
-        const MUTE_DURATION = 60000; 
+        const MUTE_DURATION = 60000; // テスト用1分
 
         const sound = document.getElementById('noticeSound');
         const initBtn = document.getElementById('initBtn');
         const muteMasterBtn = document.getElementById('muteMasterBtn');
         const statusText = document.getElementById('statusText');
         
-        // 朝一の音声ブロック解除
         initBtn.addEventListener('click', () => {
             sound.play().then(() => {
                 sound.pause();
@@ -87,7 +108,6 @@
             }).catch(err => console.error(err));
         });
 
-        // 「とりあえず音を止める」マスターボタン
         muteMasterBtn.addEventListener('click', () => {
             triggerMute();
         });
@@ -103,12 +123,14 @@
             
             statusText.innerText = '🚨 未確認の処方箋があります！';
             statusText.style.color = '#ef4444';
+            
+            // 🚨 ボタンを表示し、さらに「ピコピコ動くクラス」を追加する
             muteMasterBtn.style.display = 'inline-block';
+            muteMasterBtn.classList.add('pulse-animation');
 
             volumeInterval = setInterval(() => {
                 if (sound.volume < 0.9) {
                     sound.volume = Math.min(1.0, sound.volume + 0.2);
-                    console.log("音量を上げました:", sound.volume);
                 } else {
                     clearInterval(volumeInterval); 
                 }
@@ -122,22 +144,20 @@
             sound.pause();
             sound.currentTime = 0;
             clearInterval(volumeInterval); 
+            
+            // 🚨 音が止まったらボタンを隠し、「ピコピコ動くクラス」も綺麗に消去する
             muteMasterBtn.style.display = 'none';
+            muteMasterBtn.classList.remove('pulse-animation');
         }
 
         // 共通消音処理
         function triggerMute() {
             stopAlert(); 
             muteUntilTime = Date.now() + MUTE_DURATION; 
-            
-            // 🕒 【改善①】1秒のズレをなくすため、ボタンを押した「その瞬間（0秒後）」に1回描画処理を走らせる
             updateCountdownText(); 
-            
-            // その後、1秒ごとの定期タイマーを始動
             startCountdownDisplay();
         }
 
-        // カウントダウン表示のテキストを更新するだけの補助関数
         function updateCountdownText() {
             if (!globalHasUnread) return;
             const remainingSec = Math.ceil((muteUntilTime - Date.now()) / 1000);
@@ -147,7 +167,6 @@
             }
         }
 
-        // カウントダウン表示の制御（1秒ごと）
         function startCountdownDisplay() {
             clearInterval(countdownInterval); 
             
@@ -176,26 +195,22 @@
 
         // 行ごとの確認ボタン
         async function checkRow(rowNumber, btnElement) {
-            // 消音＆カウントダウンの即時開始
             triggerMute(); 
             
-            // ⚡ 【改善②】非同期の先回り処理：GASの通信を待たずに、見た目をその瞬間に「確認済」にする
-            const targetRow = btnElement.closest('tr'); // クリックされたボタンがある「行（tr）」を取得
+            const targetRow = btnElement.closest('tr');
             if (targetRow) {
-                targetRow.classList.add('done'); // 行全体をグレーアウト
-                const actionCell = btnElement.parentElement; // ボタンが入っているセルを取得
+                targetRow.classList.add('done');
+                const actionCell = btnElement.parentElement;
                 if (actionCell) {
-                    actionCell.innerText = '確認済'; // ボタンを消して「確認済」の文字にする
+                    actionCell.innerText = '確認済';
                 }
             }
 
             try {
-                // 裏側で静かにGASへ通知してシートを書き換える
                 await fetch(`${GAS_URL}?row=${rowNumber}`);
-                await fetchData(); // 最新データを再取得して整合性を合わせる
+                await fetchData(); 
             } catch (error) {
                 console.error("更新エラー:", error);
-                // 万が一通信エラーが起きた場合は、次回のfetchData（10秒以内）で自動的に元の表示に戻ります
             }
         }
 
@@ -219,7 +234,6 @@
                         startAlert();
                     }
                 } else {
-                    // 全件完了
                     clearInterval(countdownInterval);
                     muteUntilTime = 0;
                     stopAlert();
@@ -234,11 +248,6 @@
         // テーブル描画
         function updateTable(data) {
             const tbody = document.querySelector('#dataTable tbody');
-            
-            // ⚡ 【改善③】スタッフがボタンを押して先回りグレーアウトしている最中に、
-            // 10秒ごとの自動データ更新が重なって表示が「未確認」に巻き戻るのを防ぐための処理
-            const isCurrentlyMuted = Date.now() < muteUntilTime;
-            
             tbody.innerHTML = ''; 
             
             for (let i = data.length - 1; i >= 0; i--) {
