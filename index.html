@@ -12,8 +12,32 @@
         .btn-audio { background: #22c55e; color: white; }
         .btn-check { background: #ef4444; color: white; padding: 6px 12px; font-size: 14px; border-radius: 4px; }
         .btn-check:hover { background: #dc2626; }
-        .btn-mute-master { background: #ea580c; color: white; display: none; margin-left: 10px; padding: 8px 16px; font-size: 15px; }
+        
+        /* ✨ 【復活】とりあえず音を止めるボタンのスタイルとアニメーション設定 */
+        .btn-mute-master { 
+            background: #ea580c; 
+            color: white; 
+            display: none; 
+            margin-left: 10px; 
+            padding: 10px 20px; 
+            font-size: 16px; 
+            box-shadow: 0 4px 6px rgba(234, 88, 12, 0.3);
+            transition: transform 0.1s ease;
+        }
         .btn-mute-master:hover { background: #c2410c; }
+        
+        /* ボタンがピコピコ大きくなったり小さくなったりするアニメーション用のクラス */
+        .pulse-animation {
+            animation: pulseEffect 1.2s infinite ease-in-out;
+        }
+
+        /* 動きのルール：等倍(1倍) → 1.1倍に大きくなる → 1倍に戻る を繰り返す */
+        @keyframes pulseEffect {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.1); box-shadow: 0 6px 12px rgba(234, 88, 12, 0.5); }
+            100% { transform: scale(1); }
+        }
+
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #4b5563; color: white; }
@@ -66,7 +90,7 @@
         let muteUntilTime = 0; 
         let globalHasUnread = false; 
         
-        // 🕒 【猶予時間の設定】現在はテスト用1分（60000ms）。実務に合わせて「300000（5分）」等にしてください。
+        // 🕒 【猶予時間の設定】現在はテスト用1分（60000ms）。実務に合わせて変更してください。
         const MUTE_DURATION = 60000; 
 
         const sound = document.getElementById('noticeSound');
@@ -103,7 +127,10 @@
             
             statusText.innerText = '🚨 未確認の処方箋があります！';
             statusText.style.color = '#ef4444';
+            
+            // ✨ 【復活】ボタンを表示し、ピコピコ動くクラスを追加
             muteMasterBtn.style.display = 'inline-block';
+            muteMasterBtn.classList.add('pulse-animation');
 
             volumeInterval = setInterval(() => {
                 if (sound.volume < 0.9) {
@@ -121,7 +148,10 @@
             sound.pause();
             sound.currentTime = 0;
             clearInterval(volumeInterval); 
+            
+            // ✨ 【復活】音が止まったらボタンを隠し、アニメーションも解除
             muteMasterBtn.style.display = 'none';
+            muteMasterBtn.classList.remove('pulse-animation');
         }
 
         // 共通消音処理
@@ -148,7 +178,7 @@
             
             countdownInterval = setInterval(() => {
                 if (!globalHasUnread) {
-                    clearAllMuteState(); // 安全に通常状態に戻す関数を呼び出す
+                    clearAllMuteState(); 
                     return;
                 }
 
@@ -166,7 +196,7 @@
             }, 1000);
         }
 
-        // 🎉【新設】消音状態をクリアして「定期監視中...」の緑画面へ一瞬で戻す共通関数
+        // 消音状態をクリアして通常画面へ戻す共通関数
         function clearAllMuteState() {
             clearInterval(countdownInterval);
             muteUntilTime = 0;
@@ -177,10 +207,9 @@
 
         // 行ごとの確認ボタン
         async function checkRow(rowNumber, btnElement) {
-            // ① クリックされた瞬間にその場で即座に消音！
             stopAlert(); 
             
-            // ② 非同期の先回り処理：ボタンを「確認済」のグレーアウトにする
+            // 非同期の先回り処理：ボタンを「確認済」にする
             const targetRow = btnElement.closest('tr');
             if (targetRow) {
                 targetRow.classList.add('done');
@@ -190,25 +219,23 @@
                 }
             }
 
-            // ③ ⚡【今回の目玉改善】画面内にまだ別の「未確認ボタン」が残っているかその場で数える
+            // 画面内にまだ別の「未確認ボタン」が残っているかその場で数える
             const remainingButtons = document.querySelectorAll('#dataTable .btn-check');
             
             if (remainingButtons.length === 0) {
-                // 画面から未確認ボタンが完全に消え去ったなら、これが最後の1件！
-                // GASの通信を待たずに、0秒で即座に「定期監視中...」に切り替える！
+                // 最後の1件なら0秒で即座に「定期監視中...」に切り替える！
                 globalHasUnread = false;
                 clearAllMuteState();
             } else {
-                // まだ他にも未確認が残っているなら、いつも通り消音カウントダウンへ突入
+                // まだ残っているなら、消音カウントダウンへ突入
                 muteUntilTime = Date.now() + MUTE_DURATION; 
                 updateCountdownText(); 
                 startCountdownDisplay();
             }
 
             try {
-                // ④ 裏側で静かにGASへ通知してシートを書き換える
                 await fetch(`${GAS_URL}?row=${rowNumber}`);
-                await fetchData(); // 最新データを裏で同期して整合性を保つ
+                await fetchData(); 
             } catch (error) {
                 console.error("更新エラー:", error);
             }
@@ -234,7 +261,6 @@
                         startAlert();
                     }
                 } else {
-                    // 全件完了
                     clearAllMuteState();
                 }
             } catch (error) {
