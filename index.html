@@ -12,32 +12,8 @@
         .btn-audio { background: #22c55e; color: white; }
         .btn-check { background: #ef4444; color: white; padding: 6px 12px; font-size: 14px; border-radius: 4px; }
         .btn-check:hover { background: #dc2626; }
-        
-        /* 🚨 【改善】とりあえず音を止めるボタンのスタイルとアニメーション設定 */
-        .btn-mute-master { 
-            background: #ea580c; 
-            color: white; 
-            display: none; 
-            margin-left: 10px; 
-            padding: 10px 20px; 
-            font-size: 16px; 
-            box-shadow: 0 4px 6px rgba(234, 88, 12, 0.3);
-            transition: transform 0.1s ease;
-        }
+        .btn-mute-master { background: #ea580c; color: white; display: none; margin-left: 10px; padding: 8px 16px; font-size: 15px; }
         .btn-mute-master:hover { background: #c2410c; }
-        
-        /* ボタンがピコピコ大きくなったり小さくなったりするアニメーション用のクラス */
-        .pulse-animation {
-            animation: pulseEffect 1.2s infinite ease-in-out;
-        }
-
-        /* 動きのルール：等倍(1倍) → 1.1倍に大きくなる → 1倍に戻る を繰り返す */
-        @keyframes pulseEffect {
-            0% { transform: scale(1); }
-            50% { transform: scale(1.1); box-shadow: 0 6px 12px rgba(234, 88, 12, 0.5); }
-            100% { transform: scale(1); }
-        }
-
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #4b5563; color: white; }
@@ -73,6 +49,7 @@
     <audio id="noticeSound" src="notification.mp3" preload="auto" loop></audio>
 
     <script>
+        // 🚨 ここにデプロイしたGASの「ウェブアプリのURL」を貼り付けてください
         const GAS_URL = 'https://script.google.com/macros/s/AKfycbxToLeNqwCEOHM131KsFa-Es8d5cZ8zWJVb8zsX2SuBg_wrSB9BXC4FywQ1X5FzKnwc/exec';
         
         const SHOP_MASTER = { '1': '友愛医療センター店', '2': '豊見城中央病院前店', '3': '豊見城薬局' };
@@ -89,13 +66,15 @@
         let muteUntilTime = 0; 
         let globalHasUnread = false; 
         
-        const MUTE_DURATION = 60000; // テスト用1分
+        // 🕒 【猶予時間の設定】現在はテスト用1分（60000ms）。実務に合わせて「300000（5分）」等にしてください。
+        const MUTE_DURATION = 60000; 
 
         const sound = document.getElementById('noticeSound');
         const initBtn = document.getElementById('initBtn');
         const muteMasterBtn = document.getElementById('muteMasterBtn');
         const statusText = document.getElementById('statusText');
         
+        // 朝一の音声ブロック解除
         initBtn.addEventListener('click', () => {
             sound.play().then(() => {
                 sound.pause();
@@ -108,6 +87,7 @@
             }).catch(err => console.error(err));
         });
 
+        // 「とりあえず音を止める」マスターボタン
         muteMasterBtn.addEventListener('click', () => {
             triggerMute();
         });
@@ -123,10 +103,7 @@
             
             statusText.innerText = '🚨 未確認の処方箋があります！';
             statusText.style.color = '#ef4444';
-            
-            // 🚨 ボタンを表示し、さらに「ピコピコ動くクラス」を追加する
             muteMasterBtn.style.display = 'inline-block';
-            muteMasterBtn.classList.add('pulse-animation');
 
             volumeInterval = setInterval(() => {
                 if (sound.volume < 0.9) {
@@ -144,10 +121,7 @@
             sound.pause();
             sound.currentTime = 0;
             clearInterval(volumeInterval); 
-            
-            // 🚨 音が止まったらボタンを隠し、「ピコピコ動くクラス」も綺麗に消去する
             muteMasterBtn.style.display = 'none';
-            muteMasterBtn.classList.remove('pulse-animation');
         }
 
         // 共通消音処理
@@ -158,6 +132,7 @@
             startCountdownDisplay();
         }
 
+        // カウントダウン表示のテキスト更新
         function updateCountdownText() {
             if (!globalHasUnread) return;
             const remainingSec = Math.ceil((muteUntilTime - Date.now()) / 1000);
@@ -167,15 +142,13 @@
             }
         }
 
+        // カウントダウン表示の制御（1秒ごと）
         function startCountdownDisplay() {
             clearInterval(countdownInterval); 
             
             countdownInterval = setInterval(() => {
                 if (!globalHasUnread) {
-                    clearInterval(countdownInterval);
-                    muteUntilTime = 0;
-                    statusText.innerText = '状態: 定期監視中...';
-                    statusText.style.color = '#22c55e';
+                    clearAllMuteState(); // 安全に通常状態に戻す関数を呼び出す
                     return;
                 }
 
@@ -193,10 +166,21 @@
             }, 1000);
         }
 
+        // 🎉【新設】消音状態をクリアして「定期監視中...」の緑画面へ一瞬で戻す共通関数
+        function clearAllMuteState() {
+            clearInterval(countdownInterval);
+            muteUntilTime = 0;
+            stopAlert();
+            statusText.innerText = '状態: 定期監視中...';
+            statusText.style.color = '#22c55e';
+        }
+
         // 行ごとの確認ボタン
         async function checkRow(rowNumber, btnElement) {
-            triggerMute(); 
+            // ① クリックされた瞬間にその場で即座に消音！
+            stopAlert(); 
             
+            // ② 非同期の先回り処理：ボタンを「確認済」のグレーアウトにする
             const targetRow = btnElement.closest('tr');
             if (targetRow) {
                 targetRow.classList.add('done');
@@ -206,9 +190,25 @@
                 }
             }
 
+            // ③ ⚡【今回の目玉改善】画面内にまだ別の「未確認ボタン」が残っているかその場で数える
+            const remainingButtons = document.querySelectorAll('#dataTable .btn-check');
+            
+            if (remainingButtons.length === 0) {
+                // 画面から未確認ボタンが完全に消え去ったなら、これが最後の1件！
+                // GASの通信を待たずに、0秒で即座に「定期監視中...」に切り替える！
+                globalHasUnread = false;
+                clearAllMuteState();
+            } else {
+                // まだ他にも未確認が残っているなら、いつも通り消音カウントダウンへ突入
+                muteUntilTime = Date.now() + MUTE_DURATION; 
+                updateCountdownText(); 
+                startCountdownDisplay();
+            }
+
             try {
+                // ④ 裏側で静かにGASへ通知してシートを書き換える
                 await fetch(`${GAS_URL}?row=${rowNumber}`);
-                await fetchData(); 
+                await fetchData(); // 最新データを裏で同期して整合性を保つ
             } catch (error) {
                 console.error("更新エラー:", error);
             }
@@ -234,11 +234,8 @@
                         startAlert();
                     }
                 } else {
-                    clearInterval(countdownInterval);
-                    muteUntilTime = 0;
-                    stopAlert();
-                    statusText.innerText = '状態: 定期監視中...';
-                    statusText.style.color = '#22c55e';
+                    // 全件完了
+                    clearAllMuteState();
                 }
             } catch (error) {
                 console.error("データ取得エラー:", error);
