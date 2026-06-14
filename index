@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>薬局LINE受付 管理画面</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; }
+        h1 { color: #333; }
+        .status-bar { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .btn-audio { padding: 10px 20px; font-size: 16px; background: #22c55e; color: white; border: none; border-radius: 4px; cursor: pointer; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
+        th { background-color: #B32025; color: white; }
+        tr:hover { background-color: #f9f9f9; }
+        .img-link { color: #B32025; font-weight: bold; text-decoration: none; }
+    </style>
+</head>
+<body>
+
+    <h1>💊 LINE処方箋受付 受信モニター</h1>
+    
+    <div class="status-bar">
+        <button class="btn-audio" id="initBtn">🔊 音声通知を有効化（朝一に一度押してください）</button>
+        <span id="statusText" style="margin-left: 15px; color: #666;">状態: 準備中...</span>
+    </div>
+
+    <table id="dataTable">
+        <thead>
+            <tr>
+                <th>日時</th>
+                <th>メッセージ種別</th>
+                <th>内容 / 処方箋リンク</th>
+            </tr>
+        </thead>
+        <tbody>
+            </tbody>
+    </table>
+
+    <audio id="noticeSound" src="notification.mp3" preload="auto"></audio>
+
+    <script>
+        // 🚨 ここに先ほどデプロイしたGASの「ウェブアプリのURL」を貼り付けてください
+        const GAS_URL = 'https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXX/exec';
+        
+        let lastRowCount = 0;
+        let isAudioEnabled = false;
+        const sound = document.getElementById('noticeSound');
+        
+        // 1. 画面クリックでブラウザの音声制限を解除する
+        document.getElementById('initBtn').addEventListener('click', () => {
+            sound.play().then(() => {
+                sound.pause();
+                sound.currentTime = 0;
+                isAudioEnabled = true;
+                document.getElementById('initBtn').style.background = '#64748b';
+                document.getElementById('initBtn').innerText = '✅ 音声通知オン';
+                document.getElementById('statusText').innerText = '状態: 定期監視中...';
+            }).catch(err => console.error("音声の初期化に失敗:", err));
+        });
+
+        // 2. GASからデータを取得して画面を更新する関数
+        async function fetchData() {
+            try {
+                const response = await fetch(GAS_URL);
+                const data = await response.json();
+                
+                // 初回読み込み時は音を鳴らさない（件数だけ記録）
+                if (lastRowCount === 0) {
+                    lastRowCount = data.length;
+                    updateTable(data);
+                    return;
+                }
+                
+                // 前回よりデータが増えていた場合
+                if (data.length > lastRowCount) {
+                    lastRowCount = data.length;
+                    updateTable(data);
+                    
+                    // 音声通知が有効ならピロリンと鳴らす
+                    if (isAudioEnabled) {
+                        sound.play().catch(e => console.log("音声再生エラー:", e));
+                    }
+                }
+            } catch (error) {
+                console.error("データ取得エラー:", error);
+            }
+        }
+
+        // 3. テーブルの見た目を書き換える関数
+        function updateTable(data) {
+            const tbody = document.querySelector('#dataTable tbody');
+            tbody.innerHTML = ''; // 一度クリア
+            
+            // 新しい着信が上に来るように逆順で表示
+            for (let i = data.length - 1; i >= 0; i--) {
+                const row = data[i];
+                const tr = document.createElement('tr');
+                
+                // ドライブのURLがある場合はリンクにする
+                let contentCell = row['テキスト / 画像URL'] || '';
+                if (contentCell.startsWith('http')) {
+                    contentCell = `<a href="${contentCell}" target="_blank" class="img-link">📸 処方箋画像を開く</a>`;
+                }
+                
+                tr.innerHTML = `
+                    <td>${row['日時'] || ''}</td>
+                    <td>${row['メッセージ種別'] || ''}</td>
+                    <td>${contentCell}</td>
+                `;
+                tbody.appendChild(tr);
+            }
+        }
+
+        // 10秒に1回、自動で新着がないか見にいく（ポーリング）
+        setInterval(fetchData, 10000);
+        
+        // 起動時に一回実行
+        fetchData();
+    </script>
+</body>
+</html>
