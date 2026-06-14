@@ -59,6 +59,7 @@
         let isAudioEnabled = false;
         let volumeInterval = null;
         let isAlerting = false;
+        let muteUntilNextCheck = false; // ★一時的に音を静めるためのフラグ
         
         const sound = document.getElementById('noticeSound');
         const initBtn = document.getElementById('initBtn');
@@ -73,13 +74,14 @@
                 initBtn.style.background = '#64748b';
                 initBtn.innerText = '✅ 音声通知オン';
                 statusText.innerText = '状態: 定期監視中...';
-                fetchData(); // 即座にデータをチェックして、夜間着信があればここで音が鳴り始める
+                fetchData();
             }).catch(err => console.error(err));
         });
 
         // 音を鳴らす（段階的に大きくする）
         function startAlert() {
-            if (isAlerting || !isAudioEnabled) return;
+            // ★スタッフがボタンを押して一時消音中なら、ここでは鳴らさない
+            if (isAlerting || !isAudioEnabled || muteUntilNextCheck) return;
             isAlerting = true;
             
             sound.volume = 0.1;
@@ -107,15 +109,31 @@
             statusText.style.color = '#22c55e';
         }
 
-        // 行ごとの「確認」ボタンが押されたとき、GASへ通知してシートを書き換える
-        async function checkRow(rowNumber) {
+        // 行ごとの「確認」ボタンが押されたとき
+        async function checkRow(rowNumber, btnElement) {
+            // ① 【改善】GASの通信（2〜3秒）を待たずに、クリックされた瞬間にその場で即座に消音！
+            stopAlert(); 
+            muteUntilNextCheck = true; // 次の自動見回り（10秒後）まで音を強制ミュートする
+            
+            // ボタンの見た目もその瞬間に「処理中...」に変えて、押せたことをスタッフに伝えて安心させる
+            btnElement.disabled = true;
+            btnElement.innerText = "⏳ 処理中...";
+            btnElement.style.background = "#9ca3af";
+            statusText.innerText = '一時消音しました。残りの確認をおこなってください。';
+            statusText.style.color = '#666';
+
             try {
-                statusText.innerText = 'ステータス更新中...';
-                // GASのdoGetに ?row=行番号 をつけてアクセスする
+                // ② 裏側で静かにGASへ通知してシートを書き換える
                 await fetch(`${GAS_URL}?row=${rowNumber}`);
-                fetchData(); // 画面を再更新
+                
+                // ③ GASの書き換えが終わったら最新データを再取得
+                // ここで「まだ他にも未確認の行があるか」がチェックされます
+                await fetchData(); 
             } catch (error) {
                 console.error("更新エラー:", error);
+                btnElement.disabled = false;
+                btnElement.innerText = "✔ 確認完了";
+                btnElement.style.background = "#ef4444";
             }
         }
 
@@ -136,10 +154,17 @@
                 
                 updateTable(myStoreData);
 
-                // 未確認があれば音を鳴らし、なければ止める（夜間対応・同時着信対応）
                 if (hasUnread) {
-                    startAlert();
+                    // ★【ここがポイント！】未確認があっても、スタッフがどれかボタンを押した直後なら、
+                    // 一旦この回のタイマーでは音を鳴らさず、次の「10秒後」の見回りでフラグを解除して、そのさらに次（計20秒後〜）に再警告します。
+                    if (muteUntilNextCheck) {
+                        muteUntilNextCheck = false; // 一旦リセットして泳がせる
+                    } else {
+                        startAlert(); // 猶予期間が過ぎてもまだ未確認が残っていれば、再度鳴らす！
+                    }
                 } else {
+                    // 完全に未確認がゼロなら、一時消音フラグも完全にクリアして平和な状態に戻る
+                    muteUntilNextCheck = false;
                     stopAlert();
                 }
             } catch (error) {
@@ -147,7 +172,7 @@
             }
         }
 
-        // テーブルの描画（クリックリンク化と確認ボタン）
+        // テーブルの描画
         function updateTable(data) {
             const tbody = document.querySelector('#dataTable tbody');
             tbody.innerHTML = ''; 
@@ -160,16 +185,15 @@
                     tr.classList.add('done');
                 }
                 
-                // D列の中身がURLならボタンリンク、文字ならそのまま表示
                 let contentCell = row['テキスト / 画像URL'] || '';
                 if (contentCell.startsWith('http')) {
                     contentCell = `<a href="${contentCell}" target="_blank" class="img-link">📸 処方箋を開く</a>`;
                 }
                 
-                // 対応列のボタン制御
                 let actionCell = 'ー';
                 if (row['ステータス'] === '未確認') {
-                    actionCell = `<button class="btn btn-check" onclick="checkRow(${row.rowNumber})">✔ 確認完了</button>`;
+                    // ★【変更点】クリックしたボタン自身を制御できるように「this」を関数に渡します
+                    actionCell = `<button class="btn btn-check" onclick="checkRow(${row.rowNumber}, this)">✔ 確認完了</button>`;
                 } else {
                     actionCell = '確認済';
                 }
@@ -184,7 +208,7 @@
             }
         }
 
-        // 10秒ごとに自動チェック
+        // 10秒ごとに自動チェック（ここで「まだ残っていれば再度鳴らす」スキャンが走ります）
         setInterval(fetchData, 10000);
         if (isAudioEnabled) fetchData();
     </script>
