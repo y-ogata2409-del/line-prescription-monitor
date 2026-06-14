@@ -40,7 +40,7 @@
 
     <script>
         // 🚨 ここに先ほどデプロイしたGASの「ウェブアプリのURL」を貼り付けてください
-        const GAS_URL = 'https://script.google.com/macros/s/XXXXXXXXXXXXXXXXXXXX/exec';
+        const GAS_URL = 'https://script.google.com/macros/s/AKfycbxToLeNqwCEOHM131KsFa-Es8d5cZ8zWJVb8zsX2SuBg_wrSB9BXC4FywQ1X5FzKnwc/exec';
         
         let lastRowCount = 0;
         let isAudioEnabled = false;
