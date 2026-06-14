@@ -59,8 +59,12 @@
         let isAudioEnabled = false;
         let volumeInterval = null;
         let isAlerting = false;
-        let muteUntilNextCheck = false; // ★一時的に音を静めるためのフラグ
+        let muteUntilTime = 0; // ★消音の「有効期限（タイムスタンプ）」を記録する変数
         
+        // 🕒 【実務用設定】ボタンを押してから次に音が鳴るまでの「猶予時間」
+        // テストしやすいように最初は「1分（60000ミリ秒）」にしています。実務に合わせて「5分（300000）」等に変更してください。
+        const MUTE_DURATION = 60000; 
+
         const sound = document.getElementById('noticeSound');
         const initBtn = document.getElementById('initBtn');
         const statusText = document.getElementById('statusText');
@@ -80,8 +84,8 @@
 
         // 音を鳴らす（段階的に大きくする）
         function startAlert() {
-            // ★スタッフがボタンを押して一時消音中なら、ここでは鳴らさない
-            if (isAlerting || !isAudioEnabled || muteUntilNextCheck) return;
+            // ★現在時刻が「猶予期限」を過ぎていない（まだ猶予中）なら、絶対に鳴らさない！
+            if (isAlerting || !isAudioEnabled || Date.now() < muteUntilTime) return;
             isAlerting = true;
             
             sound.volume = 0.1;
@@ -111,23 +115,25 @@
 
         // 行ごとの「確認」ボタンが押されたとき
         async function checkRow(rowNumber, btnElement) {
-            // ① 【改善】GASの通信（2〜3秒）を待たずに、クリックされた瞬間にその場で即座に消音！
+            // ① クリックされた瞬間にその場で即座に消音！
             stopAlert(); 
-            muteUntilNextCheck = true; // 次の自動見回り（10秒後）まで音を強制ミュートする
             
-            // ボタンの見た目もその瞬間に「処理中...」に変えて、押せたことをスタッフに伝えて安心させる
+            // ② 【ここが重要！】「現在時刻 + 猶予時間（例:1分）」を、音が鳴らないデッドラインとして設定！
+            muteUntilTime = Date.now() + MUTE_DURATION; 
+            
+            // ボタンの見た目も即座に切り替え
             btnElement.disabled = true;
             btnElement.innerText = "⏳ 処理中...";
             btnElement.style.background = "#9ca3af";
-            statusText.innerText = '一時消音しました。残りの確認をおこなってください。';
+            
+            const minutes = Math.round(MUTE_DURATION / 60000);
+            statusText.innerText = `一時消音しました（他に入着があっても${minutes}分間は鳴りません）。作業を進めてください。`;
             statusText.style.color = '#666';
 
             try {
-                // ② 裏側で静かにGASへ通知してシートを書き換える
+                // 裏側で静かにGASへ通知してシートを書き換える
                 await fetch(`${GAS_URL}?row=${rowNumber}`);
-                
-                // ③ GASの書き換えが終わったら最新データを再取得
-                // ここで「まだ他にも未確認の行があるか」がチェックされます
+                // 最新データを再取得
                 await fetchData(); 
             } catch (error) {
                 console.error("更新エラー:", error);
@@ -155,16 +161,18 @@
                 updateTable(myStoreData);
 
                 if (hasUnread) {
-                    // ★【ここがポイント！】未確認があっても、スタッフがどれかボタンを押した直後なら、
-                    // 一旦この回のタイマーでは音を鳴らさず、次の「10秒後」の見回りでフラグを解除して、そのさらに次（計20秒後〜）に再警告します。
-                    if (muteUntilNextCheck) {
-                        muteUntilNextCheck = false; // 一旦リセットして泳がせる
-                    } else {
-                        startAlert(); // 猶予期間が過ぎてもまだ未確認が残っていれば、再度鳴らす！
+                    // ★未確認があっても、猶予時間内（現在時刻 < 期限）なら startAlert() の中でブロックされます
+                    startAlert();
+                    
+                    // 猶予時間中の表示をキープ
+                    if (Date.now() < muteUntilTime) {
+                        const remainingSec = Math.ceil((muteUntilTime - Date.now()) / 1000);
+                        statusText.innerText = `一時消音中（残り約${remainingSec}秒は新着があっても鳴りません。未確認あり）`;
+                        statusText.style.color = '#666';
                     }
                 } else {
-                    // 完全に未確認がゼロなら、一時消音フラグも完全にクリアして平和な状態に戻る
-                    muteUntilNextCheck = false;
+                    // 完全に未確認がゼロなら、猶予タイマーもクリアして平和な状態に戻る
+                    muteUntilTime = 0;
                     stopAlert();
                 }
             } catch (error) {
@@ -192,7 +200,6 @@
                 
                 let actionCell = 'ー';
                 if (row['ステータス'] === '未確認') {
-                    // ★【変更点】クリックしたボタン自身を制御できるように「this」を関数に渡します
                     actionCell = `<button class="btn btn-check" onclick="checkRow(${row.rowNumber}, this)">✔ 確認完了</button>`;
                 } else {
                     actionCell = '確認済';
@@ -208,7 +215,7 @@
             }
         }
 
-        // 10秒ごとに自動チェック（ここで「まだ残っていれば再度鳴らす」スキャンが走ります）
+        // 10秒ごとに自動チェック
         setInterval(fetchData, 10000);
         if (isAudioEnabled) fetchData();
     </script>
