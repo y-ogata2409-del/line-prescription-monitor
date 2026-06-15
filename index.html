@@ -9,11 +9,10 @@
         .shop-badge { background: #B32025; color: white; padding: 4px 10px; border-radius: 4px; font-size: 16px; display: inline-block; margin-bottom: 20px; }
         .status-bar { background: #fff; padding: 15px; border-radius: 8px; margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); display: flex; align-items: center; gap: 15px; }
         .btn { padding: 10px 20px; font-size: 16px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        .btn-audio { background: #22c55e; color: white; }
+        .btn-audio { background: #64748b; color: white; }
         .btn-check { background: #ef4444; color: white; padding: 6px 12px; font-size: 14px; border-radius: 4px; }
         .btn-check:hover { background: #dc2626; }
         
-        /* ✨ 【復活】とりあえず音を止めるボタンのスタイルとアニメーション設定 */
         .btn-mute-master { 
             background: #ea580c; 
             color: white; 
@@ -25,13 +24,7 @@
             transition: transform 0.1s ease;
         }
         .btn-mute-master:hover { background: #c2410c; }
-        
-        /* ボタンがピコピコ大きくなったり小さくなったりするアニメーション用のクラス */
-        .pulse-animation {
-            animation: pulseEffect 1.2s infinite ease-in-out;
-        }
-
-        /* 動きのルール：等倍(1倍) → 1.1倍に大きくなる → 1倍に戻る を繰り返す */
+        .pulse-animation { animation: pulseEffect 1.2s infinite ease-in-out; }
         @keyframes pulseEffect {
             0% { transform: scale(1); }
             50% { transform: scale(1.1); box-shadow: 0 6px 12px rgba(234, 88, 12, 0.5); }
@@ -42,8 +35,13 @@
         th, td { padding: 12px 15px; text-align: left; border-bottom: 1px solid #ddd; }
         th { background-color: #4b5563; color: white; }
         tr.done { background-color: #f3f4f6; color: #9ca3af; }
+        
+        /* ✨ 複数枚並んだときに見やすい画像リンクのスタイル */
+        .img-container { display: flex; gap: 8px; flex-wrap: wrap; }
         .img-link { background: #B32025; color: white; padding: 6px 12px; border-radius: 4px; text-decoration: none; font-weight: bold; font-size: 14px; display: inline-block; }
         .img-link:hover { background: #991b1b; }
+        .patient-name { font-weight: bold; color: #1e293b; display: block; }
+        .patient-id { font-size: 11px; color: #64748b; }
     </style>
 </head>
 <body>
@@ -61,8 +59,8 @@
         <thead>
             <tr>
                 <th>日時</th>
-                <th>ユーザーID（患者）</th>
-                <th>処方箋 / 内容</th>
+                <th>患者（LINE名）</th>
+                <th>処方箋（複数枚対応）</th>
                 <th>対応</th>
             </tr>
         </thead>
@@ -90,7 +88,6 @@
         let muteUntilTime = 0; 
         let globalHasUnread = false; 
         
-        // 🕒 【猶予時間の設定】現在はテスト用1分（60000ms）。実務に合わせて変更してください。
         const MUTE_DURATION = 60000; 
 
         const sound = document.getElementById('noticeSound');
@@ -98,7 +95,6 @@
         const muteMasterBtn = document.getElementById('muteMasterBtn');
         const statusText = document.getElementById('statusText');
         
-        // 朝一の音声ブロック解除
         initBtn.addEventListener('click', () => {
             sound.play().then(() => {
                 sound.pause();
@@ -111,50 +107,35 @@
             }).catch(err => console.error(err));
         });
 
-        // 「とりあえず音を止める」マスターボタン
-        muteMasterBtn.addEventListener('click', () => {
-            triggerMute();
-        });
+        muteMasterBtn.addEventListener('click', () => { triggerMute(); });
 
-        // 音を鳴らす（段階的に大きくする）
         function startAlert() {
             if (isAlerting || !isAudioEnabled || Date.now() < muteUntilTime) return;
             isAlerting = true;
-            
             clearInterval(volumeInterval); 
             sound.volume = 0.1; 
             sound.play().catch(e => console.log(e));
-            
             statusText.innerText = '🚨 未確認の処方箋があります！';
             statusText.style.color = '#ef4444';
-            
-            // ✨ 【復活】ボタンを表示し、ピコピコ動くクラスを追加
             muteMasterBtn.style.display = 'inline-block';
             muteMasterBtn.classList.add('pulse-animation');
 
             volumeInterval = setInterval(() => {
-                if (sound.volume < 0.9) {
-                    sound.volume = Math.min(1.0, sound.volume + 0.2);
-                } else {
-                    clearInterval(volumeInterval); 
-                }
+                if (sound.volume < 0.9) { sound.volume = Math.min(1.0, sound.volume + 0.2); } 
+                else { clearInterval(volumeInterval); }
             }, 5000); 
         }
 
-        // 音を止める
         function stopAlert() {
             if (!isAlerting) return;
             isAlerting = false;
             sound.pause();
             sound.currentTime = 0;
             clearInterval(volumeInterval); 
-            
-            // ✨ 【復活】音が止まったらボタンを隠し、アニメーションも解除
             muteMasterBtn.style.display = 'none';
             muteMasterBtn.classList.remove('pulse-animation');
         }
 
-        // 共通消音処理
         function triggerMute() {
             stopAlert(); 
             muteUntilTime = Date.now() + MUTE_DURATION; 
@@ -162,7 +143,6 @@
             startCountdownDisplay();
         }
 
-        // カウントダウン表示のテキスト更新
         function updateCountdownText() {
             if (!globalHasUnread) return;
             const remainingSec = Math.ceil((muteUntilTime - Date.now()) / 1000);
@@ -172,31 +152,19 @@
             }
         }
 
-        // カウントダウン表示の制御（1秒ごと）
         function startCountdownDisplay() {
             clearInterval(countdownInterval); 
-            
             countdownInterval = setInterval(() => {
-                if (!globalHasUnread) {
-                    clearAllMuteState(); 
-                    return;
-                }
-
+                if (!globalHasUnread) { clearAllMuteState(); return; }
                 const remainingSec = Math.ceil((muteUntilTime - Date.now()) / 1000);
-                
-                if (remainingSec > 0) {
-                    updateCountdownText();
-                } else {
+                if (remainingSec > 0) { updateCountdownText(); } 
+                else {
                     clearInterval(countdownInterval);
-                    if (globalHasUnread) {
-                        isAlerting = false; 
-                        startAlert();
-                    }
+                    if (globalHasUnread) { isAlerting = false; startAlert(); }
                 }
             }, 1000);
         }
 
-        // 消音状態をクリアして通常画面へ戻す共通関数
         function clearAllMuteState() {
             clearInterval(countdownInterval);
             muteUntilTime = 0;
@@ -205,29 +173,20 @@
             statusText.style.color = '#22c55e';
         }
 
-        // 行ごとの確認ボタン
         async function checkRow(rowNumber, btnElement) {
             stopAlert(); 
-            
-            // 非同期の先回り処理：ボタンを「確認済」にする
             const targetRow = btnElement.closest('tr');
             if (targetRow) {
                 targetRow.classList.add('done');
                 const actionCell = btnElement.parentElement;
-                if (actionCell) {
-                    actionCell.innerText = '確認済';
-                }
+                if (actionCell) { actionCell.innerText = '確認済'; }
             }
 
-            // 画面内にまだ別の「未確認ボタン」が残っているかその場で数える
             const remainingButtons = document.querySelectorAll('#dataTable .btn-check');
-            
             if (remainingButtons.length === 0) {
-                // 最後の1件なら0秒で即座に「定期監視中...」に切り替える！
                 globalHasUnread = false;
                 clearAllMuteState();
             } else {
-                // まだ残っているなら、消音カウントダウンへ突入
                 muteUntilTime = Date.now() + MUTE_DURATION; 
                 updateCountdownText(); 
                 startCountdownDisplay();
@@ -236,12 +195,9 @@
             try {
                 await fetch(`${GAS_URL}?row=${rowNumber}`);
                 await fetchData(); 
-            } catch (error) {
-                console.error("更新エラー:", error);
-            }
+            } catch (error) { console.error("更新エラー:", error); }
         }
 
-        // データ取得とアラート判定
         async function fetchData() {
             try {
                 const response = await fetch(GAS_URL);
@@ -253,22 +209,15 @@
                 }
                 
                 globalHasUnread = myStoreData.some(row => row['ステータス'] === '未確認');
-                
                 updateTable(myStoreData);
 
                 if (globalHasUnread) {
-                    if (Date.now() >= muteUntilTime) {
-                        startAlert();
-                    }
-                } else {
-                    clearAllMuteState();
-                }
-            } catch (error) {
-                console.error("データ取得エラー:", error);
-            }
+                    if (Date.now() >= muteUntilTime) { startAlert(); }
+                } else { clearAllMuteState(); }
+            } catch (error) { console.error("データ取得エラー:", error); }
         }
 
-        // テーブル描画
+        // ✨ 複数枚の画像ボタンを生成するようにパワーアップしたテーブル描画
         function updateTable(data) {
             const tbody = document.querySelector('#dataTable tbody');
             tbody.innerHTML = ''; 
@@ -277,25 +226,38 @@
                 const row = data[i];
                 const tr = document.createElement('tr');
                 
-                if (row['ステータス'] === '確認済') {
-                    tr.classList.add('done');
-                }
+                if (row['ステータス'] === '確認済') { tr.classList.add('done'); }
                 
-                let contentCell = row['テキスト / 画像URL'] || '';
-                if (contentCell.startsWith('http')) {
-                    contentCell = `<a href="${contentCell}" target="_blank" class="img-link">📸 処方箋を開く</a>`;
+                // 画像セルの中身を解析（カンマ区切り対応）
+                let contentCell = '';
+                const rawContent = row['テキスト / 画像URL'] || '';
+                
+                if (rawContent.startsWith('http')) {
+                    // カンマで分割して配列にする
+                    const urls = rawContent.split(',');
+                    contentCell = '<div class="img-container">';
+                    urls.forEach((url, index) => {
+                        contentCell += `<a href="${url.trim()}" target="_blank" class="img-link">📸 処方箋 [${index + 1}]</a>`;
+                    });
+                    contentCell += '</div>';
+                } else {
+                    contentCell = rawContent; // 文字列メッセージの場合
                 }
                 
                 let actionCell = 'ー';
                 if (row['ステータス'] === '未確認') {
                     actionCell = `<button class="btn btn-check" onclick="checkRow(${row.rowNumber}, this)">✔ 確認完了</button>`;
-                } else {
-                    actionCell = '確認済';
-                }
+                } else { actionCell = '確認済'; }
+                
+                // 患者名とLINEのIDを綺麗に2段表示
+                const patientInfo = `
+                    <span class="patient-name">${row['患者名'] || 'LINEユーザー'}</span>
+                    <span class="patient-id">${row['ユーザーID'] || ''}</span>
+                `;
                 
                 tr.innerHTML = `
                     <td>${row['日時'] || ''}</td>
-                    <td>${row['ユーザーID'] || ''}</td>
+                    <td>${patientInfo}</td>
                     <td>${contentCell}</td>
                     <td>${actionCell}</td>
                 `;
