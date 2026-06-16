@@ -28,8 +28,7 @@
         .banner-text strong { font-size: 18px; display: block; margin-bottom: 4px; }
         .banner-text span   { font-size: 13px; opacity: 0.9; }
         #initBtn {
-            background: white;
-            color: #dc2626; border: none; border-radius: 8px;
+            background: white; color: #dc2626; border: none; border-radius: 8px;
             padding: 14px 24px; font-size: 17px; font-weight: bold; cursor: pointer;
             white-space: nowrap; flex-shrink: 0;
             animation: btnBounce 1.5s infinite ease-in-out;
@@ -44,8 +43,7 @@
 
         /* ===== ステータスバー ===== */
         .status-bar {
-            background: #fff;
-            padding: 12px 16px; border-radius: 8px;
+            background: #fff; padding: 12px 16px; border-radius: 8px;
             margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex; align-items: center; gap: 12px;
         }
@@ -53,8 +51,7 @@
         .status-dot.alerting { background: #ef4444; animation: dotBlink 0.8s infinite; }
         @keyframes dotBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
         .btn-mute-master {
-            background: #ea580c;
-            color: white; border: none; border-radius: 4px;
+            background: #ea580c; color: white; border: none; border-radius: 4px;
             cursor: pointer; font-weight: bold; display: none;
             padding: 10px 18px; font-size: 15px; margin-left: auto;
         }
@@ -71,13 +68,13 @@
         th { background-color: #4b5563; color: #ffffff !important; font-size: 13px; font-weight: bold; }
         tr.done td { background-color: #f9fafb; }
 
-        /* 各列の幅指定 */
+        /* 各列の幅指定（通知列の自由記述化に伴い最適化） */
         .col-date { width: 120px; font-size: 13px; color: #1e293b; }
-        .col-patient { width: 240px; }
-        .col-repno { width: 150px; }
-        .col-prescription { min-width: 250px; color: #1e293b; }
+        .col-patient { width: 230px; }
+        .col-repno { width: 140px; }
+        .col-prescription { min-width: 230px; color: #1e293b; }
         .col-action { width: 95px; text-align: center; }
-        .col-notice { width: 95px; text-align: center; }
+        .col-notice { width: 230px; text-align: center; }
 
         /* 受付番号入力枠 */
         .no-input {
@@ -100,6 +97,13 @@
         }
         .patient-input:focus { outline: none; border-color: #6366f1; background: white; }
         
+        /* 通知自由記述入力枠 */
+        .notice-input {
+            width: 135px; padding: 5px 6px; border: 1px dashed #cbd5e1;
+            border-radius: 4px; font-size: 13px; color: #1e293b; background: #f8fafc;
+        }
+        .notice-input:focus { outline: none; border-color: #ea580c; background: white; }
+
         /* 保存・確認・通知ボタン共通 */
         .btn-save-inline {
             background: #10b981; color: white; border: none; border-radius: 4px;
@@ -109,6 +113,8 @@
         .btn-save-inline:hover { background: #059669; }
         .btn-save-inline.btn-blue { background: #6366f1; }
         .btn-save-inline.btn-blue:hover { background: #4f46e5; }
+        .btn-save-inline.btn-orange { background: #ea580c; }
+        .btn-save-inline.btn-orange:hover { background: #c2410c; }
         .save-ok { color: #22c55e; font-size: 12px; display: none; margin-left: 2px; font-weight: bold; }
 
         /* 画像ボタン */
@@ -126,10 +132,6 @@
         /* 受付（確認完了）ボタン */
         .btn-check { background: #ef4444; color: white; padding: 7px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-check:hover { background: #dc2626; }
-
-        /* 通知ボタン */
-        .btn-notice { background: #ea580c; color: white; padding: 7px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-notice:hover { background: #c2410c; }
 
         /* ===== モーダル（共通背景） ===== */
         .modal-mask { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.82); align-items: center; justify-content: center; flex-direction: column; }
@@ -187,7 +189,7 @@
             <th class="col-repno">受付番号</th>
             <th class="col-prescription">処方箋</th>
             <th class="col-action">受付</th>
-            <th class="col-notice">通知</th>
+            <th class="col-notice">通知メッセージ送信 (自由記述)</th>
         </tr>
     </thead>
     <tbody></tbody>
@@ -321,14 +323,34 @@
         finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
     }
 
-    // ===== LINE通知送信機能（非同期） =====
+    // ===== 【修正】LINE通知送信機能（非同期・自由記述） =====
     function sendLineNotice(receptionId) {
-        if (!confirm('該当の患者へ調剤完了等の定型LINE通知を送信しますか？')) return;
-        alert('LINE通知の送信リクエストを受け付けました。');
-        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true`)
+        const inputEl = document.getElementById(`ninput-${receptionId}`);
+        const okEl = document.getElementById(`nok-${receptionId}`);
+        if (!inputEl) return;
+        
+        const message = inputEl.value.trim();
+        if (!message) {
+            inputEl.style.borderColor = '#ef4444';
+            setTimeout(() => { inputEl.style.borderColor = ''; }, 2000);
+            return;
+        }
+        
+        // 送信中のステータスを表示
+        okEl.innerText = '⏳';
+        okEl.style.display = 'inline';
+
+        // 非同期でGASへupdate, notice, messageパラメータを送信
+        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&message=${encodeURIComponent(message)}`)
+            .then(() => {
+                okEl.innerText = '✓';
+                inputEl.value = ''; // 送信に成功したら入力欄を空にする
+                setTimeout(() => { okEl.style.display = 'none'; }, 2000);
+            })
             .catch(err => {
                 console.error(err);
-                alert('LINE通知送信中にエラーが発生しました。インターネット接続を確認してください。');
+                okEl.innerText = '❌';
+                setTimeout(() => { okEl.style.display = 'none'; }, 2000);
             });
     }
 
@@ -406,35 +428,24 @@
             const rawContent = row['テキスト / 画像URL'] || '';
             if (rawContent.startsWith('http')) {
                 const urls = rawContent.split(',').map(u => u.trim()).filter(Boolean);
-                
-                // 【重要修正】HTML属性値の衝突(崩れ)を防ぐため、JSONのダブルクォーテーションをエスケープ
-                const urlsParam = JSON.stringify(urls).replace(/"/g, '&quot;');
-                
                 if (urls.length === 1) {
-                    prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(${urlsParam}, 0)">📸 処方箋を確認</button></div>`;
+                    prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(['${urls[0]}'], 0)">📸 処方箋を確認</button></div>`;
                 } else {
                     let btnSub = '';
-                    urls.forEach((u, i) => { 
-                        btnSub += `<button class="img-link" onclick="openModal(${urlsParam}, ${i})">[${i + 1}]</button>`; 
-                    });
+                    urls.forEach((u, i) => { btnSub += `<button class="img-link" onclick="openModal(${JSON.stringify(urls)}, ${i})">[${i + 1}]</button>`; });
                     prescriptionHtml = `
                         <div class="img-container">
-                            <button class="img-link-all" onclick="openModal(${urlsParam}, 0)">📋 ${urls.length}枚まとめて確認</button>
+                            <button class="img-link-all" onclick="openModal(${JSON.stringify(urls)}, 0)">📋 ${urls.length}枚まとめて確認</button>
                             ${btnSub}
                         </div>`;
                 }
             } else {
-                // テキスト長文対策: 30文字を超えたら省略し、全文モーダルボタンを配置
                 if (rawContent.length > 30) {
                     const shortText = rawContent.substring(0, 30) + '...';
-                    
-                    // 【重要修正】HTML属性値の衝突を防ぐため、JSONのダブルクォーテーションをエスケープ
-                    const textParam = JSON.stringify(rawContent).replace(/"/g, '&quot;');
-                    
                     prescriptionHtml = `
                         <div class="text-preview-box">
                             <span>${shortText}</span>
-                            <button class="btn-text-more" onclick="openTextModal(${textParam})">全文確認</button>
+                            <button class="btn-text-more" onclick="openTextModal(${JSON.stringify(rawContent)})">全文確認</button>
                         </div>`;
                 } else {
                     prescriptionHtml = `<span style="font-size:13px;">${rawContent}</span>`;
@@ -445,10 +456,16 @@
             const actionHtml = isDone 
                 ? `<span style="color:#9ca3af; font-weight:bold;">確認済</span>` 
                 : `<button class="btn-check" onclick="checkRow('${rid}', this)">✔ 確認完了</button>`;
-            
-            // 通知列のHTML
-            const noticeHtml = `<button class="btn-notice" onclick="sendLineNotice('${rid}')">💬 通知</button>`;
-            
+
+            // 【修正】通知列のHTML（自由記述のインライン入力形式に変更）
+            const noticeHtml = `
+                <div class="inline-edit-wrap">
+                    <input type="text" id="ninput-${rid}" class="notice-input" placeholder="メッセージを入力...">
+                    <button class="btn-save-inline btn-orange" onclick="sendLineNotice('${rid}')">送信</button>
+                    <span id="nok-${rid}" class="save-ok">✓</span>
+                </div>
+            `;
+
             // 行全体のHTML構造
             const rowInnerHTML = `
                 <td class="col-date">${row['日時'] || ''}</td>
@@ -481,11 +498,15 @@
             } else {
                 const pInput = tr.querySelector(`#pinput-${rid}`);
                 const noInput = tr.querySelector(`#noinput-${rid}`);
+                const nInput = tr.querySelector(`#ninput-${rid}`);
                 
                 tr.querySelector('.col-prescription').innerHTML = prescriptionHtml;
                 tr.querySelector('.col-action').innerHTML = actionHtml;
-                tr.querySelector('.col-notice').innerHTML = noticeHtml;
-
+                
+                // 【重要】文字入力中に自動更新が走っても内容が消えないようにフォーカス制御を追加
+                if (!nInput || !nInput.matches(':focus')) {
+                    tr.querySelector('.col-notice').innerHTML = noticeHtml;
+                }
                 if (pInput && !pInput.matches(':focus')) {
                     pInput.value = rawPatientName;
                     tr.querySelector('.patient-name-display').textContent = displayPatientName;
