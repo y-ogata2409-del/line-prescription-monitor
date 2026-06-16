@@ -86,7 +86,7 @@
             border-radius: 4px; font-size: 14px; text-align: center;
         }
         .no-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
-        tr.done .no-input { background: #e5e7eb; color: #6b7280; }
+        tr.done .no-input { background: #f3f4f6; color: #9ca3af; border: none; cursor: default; }
 
         /* 患者名 */
         .patient-name-display { font-weight: bold; color: #1e293b; font-size: 14px; }
@@ -101,7 +101,6 @@
             border-radius: 4px; font-size: 13px; color: #1e293b; min-width: 0; background: #f8fafc;
         }
         .patient-input:focus { outline: none; border-color: #6366f1; background: white; }
-        tr.done .patient-input { background: #e5e7eb; border-color: #d1d5db; }
         
         .btn-save-patient {
             background: #6366f1; color: white; border: none; border-radius: 4px;
@@ -444,7 +443,6 @@
 
         sorted.forEach(row => {
             const rid    = row['受付ID'] || '';
-            // 💡 【修正】タイポ 'ステータas' を元の正確な 'ステータス' に直しました
             const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
@@ -608,7 +606,25 @@
                     nBtn.textContent = '送信済';
                 }
             }
+            
+            // 💡【重要修正】確認完了した行(isDone)の時に、不要な表示枠を非表示(display: none)にする制御を追加しました
             tr.classList.toggle('done', isDone);
+            const editWrap = tr.querySelector('.patient-edit-wrap');
+            const userSub  = tr.querySelector('.user-id-sub');
+            const ridLabel = tr.querySelector('.reception-id');
+            if (isDone) {
+                if (editWrap) editWrap.style.display = 'none'; // 名前入力欄と保存ボタン
+                if (userSub)  userSub.style.display  = 'none'; // ユーザーID
+                if (ridLabel) ridLabel.style.display = 'none'; // 受付ID
+                const noInp = tr.querySelector('.no-input');
+                if (noInp) noInp.readOnly = true;              // 受付番号の入力をロック
+            } else {
+                if (editWrap) editWrap.style.display = 'flex';
+                if (userSub)  userSub.style.display  = 'block';
+                if (ridLabel) ridLabel.style.display = 'block';
+                const noInp = tr.querySelector('.no-input');
+                if (noInp) noInp.readOnly = false;
+            }
         });
 
         // ソート
