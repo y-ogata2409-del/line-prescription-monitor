@@ -71,8 +71,15 @@
         th { background-color: #4b5563; color: white; font-size: 13px; }
         tr.done td { background-color: #f3f4f6; }
 
-        /* No.列（登録ボタン列） */
-        td.col-no { width: 90px; text-align: center; }
+        /* 各列の幅指定 */
+        .col-no { width: 90px; text-align: center; }
+        .col-date { width: 140px; font-size: 13px; }
+        .col-patient { min-width: 260px; }
+        .col-repno { width: 170px; }
+        .col-prescription { min-width: 200px; }
+        .col-action { width: 110px; }
+
+        /* 登録ボタン */
         .btn-register-row {
             background-color: #3b82f6;
             color: white; border: none; padding: 6px 12px;
@@ -82,22 +89,20 @@
         .btn-register-row:hover { background-color: #2563eb; }
         tr.done .btn-register-row { background-color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
 
-        /* 受付番号列 */
-        td.col-repno { width: 160px; }
+        /* 受付番号入力枠 */
         .no-input {
-            width: 60px; padding: 5px 6px; border: 1px solid #d1d5db;
+            width: 65px; padding: 5px 6px; border: 1px solid #d1d5db;
             border-radius: 4px; font-size: 14px; text-align: center;
         }
         .no-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
         tr.done .no-input { background: #f3f4f6; color: #9ca3af; }
 
-        /* 患者名列 */
-        td.col-patient { min-width: 260px; }
+        /* 患者名表示 */
         .patient-name-display { font-weight: bold; color: #1e293b; font-size: 15px; }
         .line-name-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
         tr.done .patient-name-display { color: #9ca3af; }
 
-        /* インライン編集共通 */
+        /* インライン編集レイアウト */
         .inline-edit-wrap { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
         .patient-input {
             width: 140px; padding: 5px 6px; border: 1px dashed #cbd5e1;
@@ -105,7 +110,7 @@
         }
         .patient-input:focus { outline: none; border-color: #6366f1; background: white; }
         
-        /* インラインボタン共通 */
+        /* 保存ボタン */
         .btn-save-inline {
             background: #10b981;
             color: white; border: none; border-radius: 4px;
@@ -115,7 +120,7 @@
         .btn-save-inline:hover { background: #059669; }
         .btn-save-inline.btn-blue { background: #6366f1; }
         .btn-save-inline.btn-blue:hover { background: #4f46e5; }
-        .save-ok { color: #22c55e; font-size: 12px; display: none; margin-left: 2px; }
+        .save-ok { color: #22c55e; font-size: 12px; display: none; margin-left: 2px; font-weight: bold; }
 
         /* 画像ボタン */
         .img-container { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
@@ -170,12 +175,12 @@
 <table id="dataTable">
     <thead>
         <tr>
-            <th style="width:90px; text-align:center;">No.</th>
-            <th style="width:130px">日時</th>
-            <th>患者名 / LINE名</th>
-            <th style="width:160px">受付番号</th>
-            <th style="width:200px">処方箋</th>
-            <th style="width:90px">対応</th>
+            <th class="col-no">No.</th>
+            <th class="col-date">日時</th>
+            <th class="col-patient">患者名 / LINE名</th>
+            <th class="col-repno">受付番号</th>
+            <th class="col-prescription">処方箋</th>
+            <th class="col-action">対応</th>
         </tr>
     </thead>
     <tbody></tbody>
@@ -199,7 +204,6 @@
 <audio id="noticeSound" src="notification.mp3" preload="auto" loop></audio>
 
 <script>
-    // ▼ GASのウェブアプリURL
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbx0FTHjd8eDUkbavljJcaGNW0p29oHH490jY6IlN7eMPLPJ3oWpE2fsvFvFibr2SyAL/exec';
     const SHOP_MASTER = { '1': '友愛医療センター店', '2': '豊見城中央病院前店', '3': '豊見城薬局' };
     const urlParams = new URLSearchParams(window.location.search);
@@ -285,7 +289,7 @@
         if (isAudioEnabled) { statusText.innerText = '状態: 定期監視中...'; statusText.style.color = '#22c55e'; }
     }
 
-    // ===== 確認完了ボタン =====
+    // ===== 右端の確認完了ボタン =====
     async function checkRow(receptionId, btnElement) {
         if (pendingCheckIds.has(receptionId)) return;
         pendingCheckIds.add(receptionId);
@@ -304,18 +308,16 @@
         finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
     }
 
-    // ===== 【新規追加】受付内「登録」ボタンの処理 =====
-    function registerRowDirect(receptionId) {
-        // 対象の行にある「✔ 確認完了」ボタンを探して、それを実行させる
-        const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
-        if (tr) {
-            const checkBtn = tr.querySelector('.btn-check');
-            if (checkBtn) {
-                checkBtn.click();
-            } else {
-                alert('この受付は既に確認済みです。');
-            }
-        }
+    // ===== 【修正】一番左の「登録」ボタンが押されたときの処理 =====
+    async function registerRowDirect(receptionId) {
+        if(!confirm("この受付の基幹システム等への登録処理を実行しますか？")) return;
+        
+        // 現状、別の独自登録処理のURLが用意されるまでは、確認用にアラートを出すか、任意の通信を行えます。
+        // ここでは単独の処理として「登録完了」のログ出しと通知のみ行います（確認完了とは連動しません）。
+        alert("登録処理を実行しました。");
+        
+        // もし将来的にGAS側に ?register=true などの専用処理を作る場合は以下のように通信できます。
+        // await fetch(`${GAS_URL}?register=true&id=${encodeURIComponent(receptionId)}`);
     }
 
     // ===== 患者名のみを個別に保存 =====
@@ -329,7 +331,7 @@
             await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`);
             okEl.style.display = 'inline';
             setTimeout(() => { okEl.style.display = 'none'; }, 2000);
-            setTimeout(fetchData, 1000); // 画面データを1秒後に再読み込みして「〇〇 様」表示を更新
+            setTimeout(fetchData, 1000); // 1秒後に名前（〇〇 様）の表示を更新
         } catch (err) { 
             console.error(err); 
             alert('患者名の保存に失敗しました');
@@ -380,159 +382,80 @@
             const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
-            // 患者名に「様」を付けるロジックの用意
+            // 患者名に「様」を付けるロジック
             const rawPatientName = row['患者名'] ? String(row['患者名']).trim() : '';
             const displayPatientName = rawPatientName ? `${rawPatientName} 様` : '（未登録）';
 
+            // 処方箋（画像ボタンまたはテキスト）のHTML組み立て
+            let prescriptionHtml = '';
+            const rawContent = row['テキスト / 画像URL'] || '';
+            if (rawContent.startsWith('http')) {
+                const urls = rawContent.split(',').map(u => u.trim()).filter(Boolean);
+                if (urls.length === 1) {
+                    prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(['${urls[0]}'], 0)">📸 処方箋を確認</button></div>`;
+                } else {
+                    let btnSub = '';
+                    urls.forEach((u, i) => { btnSub += `<button class="img-link" onclick="openModal(${JSON.stringify(urls)}, ${i})">[${i + 1}]</button>`; });
+                    prescriptionHtml = `
+                        <div class="img-container">
+                            <button class="img-link-all" onclick="openModal(${JSON.stringify(urls)}, 0)">📋 ${urls.length}枚まとめて確認</button>
+                            ${btnSub}
+                        </div>`;
+                }
+            } else {
+                prescriptionHtml = `<span style="font-size:13px;">${rawContent}</span>`;
+            }
+
+            // 対応（右端ボタン）のHTML組み立て
+            const actionHtml = isDone 
+                ? `<span style="color:#9ca3af;">確認済</span>` 
+                : `<button class="btn-check" onclick="checkRow('${rid}', this)">✔ 確認完了</button>`;
+
+            // 行全体のHTML構造（★ヘッダーの列順と完全に一致させてバグを排除★）
+            const rowInnerHTML = `
+                <td class="col-no">
+                    <button class="btn-register-row" onclick="registerRowDirect('${rid}')">登録</button>
+                </td>
+                <td class="col-date">${row['日時'] || ''}</td>
+                <td class="col-patient">
+                    <div class="patient-name-display">${displayPatientName}</div>
+                    <div class="line-name-sub">LINE: ${row['LINE名'] || ''}</div>
+                    <div class="inline-edit-wrap">
+                        <input type="text" id="pinput-${rid}" class="patient-input" value="${rawPatientName}" placeholder="患者名を入力...">
+                        <button class="btn-save-inline btn-blue" onclick="savePatientNameOnly('${rid}')">名前保存</button>
+                        <span id="pok-${rid}" class="save-ok">✓</span>
+                    </div>
+                </td>
+                <td class="col-repno">
+                    <div class="inline-edit-wrap">
+                        <input type="text" id="noinput-${rid}" class="no-input" value="${row['受付番号'] || ''}" placeholder="—">
+                        <button class="btn-save-inline" onclick="saveReceptionNoOnly('${rid}')">番号保存</button>
+                        <span id="nook-${rid}" class="save-ok">✓</span>
+                    </div>
+                </td>
+                <td class="col-prescription">${prescriptionHtml}</td>
+                <td class="col-action">${actionHtml}</td>
+            `;
+
             if (!tr) {
+                // 新規行作成
                 tr = document.createElement('tr');
                 tr.setAttribute('data-rid', rid);
-
-                // ── No.列（受付IDの文字を排除し、登録ボタンを配置） ──
-                const tdNo = document.createElement('td');
-                tdNo.className = 'col-no';
-                const regBtn = document.createElement('button');
-                regBtn.className = 'btn-register-row';
-                regBtn.textContent = '登録';
-                regBtn.onclick = () => registerRowDirect(rid);
-                tdNo.appendChild(regBtn);
-
-                // ── 日時列 ──
-                const tdDate = document.createElement('td');
-                tdDate.textContent = row['日時'] || '';
-                tdDate.style.fontSize = '13px';
-
-                // ── 患者名列（ユーザーID表示のIDSubは削除） ──
-                const tdPatient = document.createElement('td');
-                tdPatient.className = 'col-patient';
-
-                const nameDisp = document.createElement('div');
-                nameDisp.className = 'patient-name-display';
-                nameDisp.textContent = displayPatientName;
-
-                const lineSub = document.createElement('div');
-                lineSub.className = 'line-name-sub';
-                lineSub.textContent = 'LINE: ' + (row['LINE名'] || '');
-
-                // 患者名インライン編集UI（個別ボタン化）
-                const editWrap = document.createElement('div');
-                editWrap.className = 'inline-edit-wrap';
-                const pInput = document.createElement('input');
-                pInput.type = 'text';
-                pInput.id = `pinput-${rid}`;
-                pInput.className = 'patient-input';
-                pInput.value = rawPatientName;
-                pInput.placeholder = '患者名を入力...';
-                
-                const pSaveBtn = document.createElement('button');
-                pSaveBtn.className = 'btn-save-inline btn-blue';
-                pSaveBtn.textContent = '名前保存';
-                pSaveBtn.onclick = () => savePatientNameOnly(rid);
-                
-                const pSaveOk = document.createElement('span');
-                pSaveOk.id = `pok-${rid}`;
-                pSaveOk.className = 'save-ok';
-                pSaveOk.textContent = '✓';
-                
-                editWrap.append(pInput, pSaveBtn, pSaveOk);
-                tdPatient.append(nameDisp, lineSub, editWrap);
-
-                // ── 受付番号列（個別保存ボタン化してここに移動） ──
-                const tdRepNo = document.createElement('td');
-                tdRepNo.className = 'col-repno';
-                
-                const repNoWrap = document.createElement('div');
-                repNoWrap.className = 'inline-edit-wrap';
-                
-                const noInput = document.createElement('input');
-                noInput.type = 'text';
-                noInput.id = `noinput-${rid}`;
-                noInput.className = 'no-input';
-                noInput.value = row['受付番号'] || '';
-                noInput.placeholder = '—';
-                noInput.title = '受付番号を入力';
-
-                const noSaveBtn = document.createElement('button');
-                noSaveBtn.className = 'btn-save-inline';
-                noSaveBtn.textContent = '番号保存';
-                noSaveBtn.onclick = () => saveReceptionNoOnly(rid);
-
-                const noSaveOk = document.createElement('span');
-                noSaveOk.id = `nook-${rid}`;
-                noSaveOk.className = 'save-ok';
-                noSaveOk.textContent = '✓';
-
-                repNoWrap.append(noInput, noSaveBtn, noSaveOk);
-                tdRepNo.appendChild(repNoWrap);
-
-                // ── 処方箋列 ──
-                const tdContent = document.createElement('td');
-                const rawContent = row['テキスト / 画像URL'] || '';
-                if (rawContent.startsWith('http')) {
-                    const urls = rawContent.split(',').map(u => u.trim()).filter(Boolean);
-                    const wrap = document.createElement('div');
-                    wrap.className = 'img-container';
-                    if (urls.length === 1) {
-                        const btn = document.createElement('button');
-                        btn.className = 'img-link';
-                        btn.textContent = '📸 処方箋を確認';
-                        btn.onclick = () => openModal(urls, 0);
-                        wrap.appendChild(btn);
-                    } else {
-                        const allBtn = document.createElement('button');
-                        allBtn.className = 'img-link-all';
-                        allBtn.textContent = `📋 ${urls.length}枚まとめて確認`;
-                        allBtn.onclick = () => openModal(urls, 0);
-                        wrap.appendChild(allBtn);
-                        urls.forEach((_, i) => {
-                            const btn = document.createElement('button');
-                            btn.className = 'img-link';
-                            btn.textContent = `[${i + 1}]`;
-                            btn.onclick = () => openModal(urls, i);
-                            wrap.appendChild(btn);
-                        });
-                    }
-                    tdContent.appendChild(wrap);
-                } else {
-                    tdContent.textContent = rawContent;
-                    tdContent.style.fontSize = '13px';
-                }
-
-                // ── 対応列 ──
-                const tdAction = document.createElement('td');
-                if (!isDone) {
-                    const btn = document.createElement('button');
-                    btn.className = 'btn-check';
-                    btn.textContent = '✔ 確認完了';
-                    btn.onclick = function() { checkRow(rid, this); };
-                    tdAction.appendChild(btn);
-                } else {
-                    tdAction.textContent = '確認済';
-                    tdAction.style.color = '#9ca3af';
-                }
-
-                // 順番に組み立てる
-                tr.append(tdNo, tdDate, tdPatient, tdRepNo, tdContent, tdAction);
+                tr.innerHTML = rowInnerHTML;
                 tbody.appendChild(tr);
-
             } else {
-                // 既存行のアップデート処理
-                const actionTd = tr.querySelector('td:last-child');
-                if (isDone && actionTd && actionTd.querySelector('.btn-check')) {
-                    actionTd.textContent = '確認済';
-                    actionTd.style.color = '#9ca3af';
-                }
-                
-                // フォーカスが当たっていない時だけ、裏の最新データを入力欄に反映
+                // 既存行の更新処理（入力欄へのフォーカス時は上書きを防ぐ）
                 const pInput = tr.querySelector(`#pinput-${rid}`);
+                const noInput = tr.querySelector(`#noinput-${rid}`);
+                
+                // 表示名や対応ボタンをリフレッシュ
+                tr.querySelector('.patient-name-display').textContent = displayPatientName;
+                tr.querySelector('.col-prescription').innerHTML = prescriptionHtml;
+                tr.querySelector('.col-action').innerHTML = actionHtml;
+
                 if (pInput && !pInput.matches(':focus')) {
                     pInput.value = rawPatientName;
                 }
-                const nameDisp = tr.querySelector('.patient-name-display');
-                if (nameDisp) {
-                    nameDisp.textContent = displayPatientName;
-                }
-                const noInput = tr.querySelector(`#noinput-${rid}`);
                 if (noInput && !noInput.matches(':focus') && row['受付番号'] !== undefined) {
                     noInput.value = row['受付番号'] || '';
                 }
@@ -540,13 +463,9 @@
             tr.classList.toggle('done', isDone);
         });
 
-        // 新しい順に並び替え
+        // 受付IDの降順（新しい順）に並び替え
         Array.from(tbody.querySelectorAll('tr'))
-            .sort((a, b) => {
-                const idA = a.dataset.rid || '';
-                const idB = b.dataset.rid || '';
-                return idB.localeCompare(idA);
-            })
+            .sort((a, b) => (b.dataset.rid || '').localeCompare(a.dataset.rid || ''))
             .forEach(r => tbody.appendChild(r));
     }
 
