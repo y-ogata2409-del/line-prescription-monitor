@@ -362,9 +362,49 @@
 
     function sendLineNotice(receptionId) {
         activeNoticeReceptionId = receptionId;
+
+        // 該当する行（tr）から現在の薬局名と受付番号を取得
+        const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
+        
+        // 画面上部に表示されている店舗名（選択中の店舗名）を取得
+        const shopBadgeText = document.getElementById('shopName').innerText;
+        // 「全店舗のデータを表示中」などの場合は「薬局」とする
+        const currentShop = shopBadgeText.includes('⚠️') ? '薬局' : shopBadgeText;
+
+        // 受付番号の入力枠から値を取得
+        const noInput = tr ? tr.querySelector(`#noinput-${receptionId}`) : null;
+        const repNo = noInput ? noInput.value.trim() : '';
+
+        // 受付番号があるかどうかで文章を切り替え
+        let noText = '';
+        if (repNo) {
+            noText = `あなたの受付番号は【${repNo}番】です。\n\n`;
+        }
+
+        // テンプレートメッセージをその場で動的に生成
+        const dynamicTemplates = {
+            'ready': `【${currentShop}】からのお知らせ\n\nお薬のご用意ができました。\n${noText}ご来局の際は、お気をつけてお越しください。`,
+            'custom': `【${currentShop}】からのお知らせ\n\n`
+        };
+
+        // 初期表示を「お薬準備完了」にセット
         document.getElementById('noticeTemplate').value = 'ready';
-        document.getElementById('noticeMessage').value = noticeTemplates['ready'];
+        document.getElementById('noticeMessage').value = dynamicTemplates['ready'];
         document.getElementById('noticeModal').classList.add('open');
+
+        // テンプレート切り替え時のイベントリスナーを再設定（動的テキストを反映するため）
+        const templateSelect = document.getElementById('noticeTemplate');
+        
+        // 既存のイベントリスナーによる重複を防ぐため、一度削除して再配置するか、イベント内で動的に書き換えます
+        templateSelect.onchange = (e) => {
+            const val = e.target.value;
+            if (val === 'ready') {
+                document.getElementById('noticeMessage').value = dynamicTemplates['ready'];
+            } else {
+                document.getElementById('noticeMessage').value = dynamicTemplates['custom'];
+                document.getElementById('noticeMessage').focus();
+            }
+        };
     }
 
     function closeNoticeModal() {
@@ -685,7 +725,8 @@
     window.addEventListener('click', e => {
         if (e.target === imgModal) closeImgModal();
         if (e.target === document.getElementById('textModal')) closeTextModal();
-        if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
+        // 枠外クリックで閉じないようにコメントアウト
+        // if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
     });
 
     // ===== 起動 =====
