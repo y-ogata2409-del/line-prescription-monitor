@@ -50,6 +50,7 @@
         .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
         .status-dot.alerting { background: #ef4444; animation: dotBlink 0.8s infinite; }
         @keyframes dotBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+        .status-text { font-weight: bold; font-size: 15px; }
         .btn-mute-master {
             background: #ea580c; color: white; border: none; border-radius: 4px;
             cursor: pointer; font-weight: bold; display: none;
@@ -72,7 +73,7 @@
         .col-patient { width: 240px; }
         .col-repno { width: 150px; }
         .col-prescription { min-width: 250px; color: #1e293b; }
-        .col-action { width: 95px; text-align: center; }
+        .col-action { width: 105px; text-align: center; }
         .col-notice { width: 95px; text-align: center; }
 
         /* 受付番号入力枠 */
@@ -173,7 +174,7 @@
 
 <div class="status-bar">
     <div class="status-dot" id="statusDot"></div>
-    <span id="statusText" style="color:#666;font-weight:bold;">状態: 準備中...</span>
+    <span class="status-text" id="statusText" style="color:#666;">状態: 準備中...</span>
     <button class="btn-mute-master" id="muteMasterBtn">🔕 とりあえず音を止める</button>
 </div>
 
@@ -191,6 +192,7 @@
     <tbody></tbody>
 </table>
 
+<!-- ===== 画像確認モーダル ===== -->
 <div id="imgModal" class="modal-mask">
     <div class="modal-header">
         <span class="modal-counter" id="modalCounter"></span>
@@ -206,6 +208,7 @@
     </div>
 </div>
 
+<!-- ===== 全文テキスト確認モーダル ===== -->
 <div id="textModal" class="modal-mask">
     <div class="text-window">
         <p class="text-window-title">📝 メッセージ本文の確認</p>
@@ -214,6 +217,7 @@
     </div>
 </div>
 
+<!-- ===== LINE通知送信用モーダル ===== -->
 <div id="noticeModal" class="modal-mask">
     <div class="text-window">
         <p class="text-window-title">💬 LINE通知の送信</p>
@@ -260,11 +264,11 @@
     // ===== HTML属性用安全エスケープ関数 =====
     function escapeHtmlAttr(str) {
         if (!str) return '';
-        return str.replace(/&/g, '&amp;')
-                  .replace(/"/g, '&quot;')
-                  .replace(/'/g, '&#39;')
-                  .replace(/</g, '&lt;')
-                  .replace(/>/g, '&gt;');
+        return String(str).replace(/&/g, '&amp;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#39;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
     }
 
     document.getElementById('initBtn').addEventListener('click', () => {
@@ -391,7 +395,6 @@
         const receptionId = activeNoticeReceptionId;
         closeNoticeModal();
 
-        // 画面上の通知ボタンを即座にグレーの「通知済」に変更する
         localNoticeSentIds.add(receptionId);
         const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
         if (tr) {
@@ -404,7 +407,6 @@
 
         alert('LINE通知の送信リクエストを受け付けました。');
 
-        // 修正版GAS用URLパラメータ（メッセージ本文も載せて送信）
         fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&message=${encodeURIComponent(message)}`)
             .catch(err => {
                 console.error(err);
@@ -475,6 +477,8 @@
 
         sorted.forEach(row => {
             const rid    = row['受付ID'] || '';
+            if (!rid) return; // IDがない不正な行はスキップ
+            
             const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
@@ -484,8 +488,8 @@
             // ── 処方箋 ──
             let prescriptionHtml = '';
             const rawContent = row['テキスト / 画像URL'] || '';
-            if (rawContent.startsWith('http')) {
-                const urls = rawContent.split(',').map(u => u.trim()).filter(Boolean);
+            if (String(rawContent).startsWith('http')) {
+                const urls = String(rawContent).split(',').map(u => u.trim()).filter(Boolean);
                 if (urls.length === 1) {
                     const singleUrlJson = escapeHtmlAttr(JSON.stringify([urls[0]]));
                     prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(${singleUrlJson}, 0)">📸 処方箋を確認</button></div>`;
@@ -503,8 +507,8 @@
                         </div>`;
                 }
             } else {
-                if (rawContent.length > 30) {
-                    const shortText = rawContent.substring(0, 30) + '...';
+                if (String(rawContent).length > 30) {
+                    const shortText = String(rawContent).substring(0, 30) + '...';
                     const escapedContent = escapeHtmlAttr(JSON.stringify(rawContent));
                     prescriptionHtml = `
                         <div class="text-preview-box">
@@ -521,13 +525,12 @@
                 ? `<span style="color:#22c55e; font-weight:bold;">✅確認済</span>` 
                 : `<button class="btn-check" onclick="checkRow('${rid}', this)">✔ 確認完了</button>`;
 
-            // 通知列のHTML（J列が「通知済」または画面上で送信済なら「灰色」、ただし再送信可能）
+            // ★修正ポイント：スプレッドシートの見出し「通知」に対応
             const isNoticeSent = (row['通知'] === '通知済' || localNoticeSentIds.has(rid));
             const btnClass = isNoticeSent ? 'btn-notice sent' : 'btn-notice';
             const btnText = isNoticeSent ? '💬 通知済' : '💬 通知';
             const noticeHtml = `<button class="${btnClass}" onclick="sendLineNotice('${rid}')">${btnText}</button>`;
 
-            // 行全体のHTML構造
             const rowInnerHTML = `
                 <td class="col-date">${row['日時'] || ''}</td>
                 <td class="col-patient">
@@ -603,7 +606,7 @@
     const openExternal = document.getElementById('openExternal');
 
     function toPreviewUrl(url) {
-        const m = url.match(/\/file\/d\/([^\/]+)/);
+        const m = String(url).match(/\/file\/d\/([^\/]+)/);
         return m ? `https://drive.google.com/file/d/${m[1]}/preview` : url;
     }
     function openModal(urls, startIndex = 0) {
