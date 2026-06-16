@@ -72,7 +72,7 @@
         .col-repno { width: 150px; }
         .col-prescription { min-width: 250px; color: #1e293b; }
         .col-action { width: 95px; text-align: center; }
-        .col-notice { width: 160px; text-align: center; } /* 幅を少し広げて固定 */
+        .col-notice { width: 160px; text-align: center; }
 
         /* 受付番号入力枠 */
         .no-input {
@@ -122,23 +122,21 @@
         .btn-check { background: #ef4444; color: white; padding: 7px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-check:hover { background: #dc2626; }
 
-        /* 通知ボタン（固定幅 & 状態別色分け） */
+        /* 通知ボタン */
         .btn-notice {
-            width: 140px; /* 幅を固定して崩れを防ぐ */
+            width: 140px;
             color: white; padding: 7px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold;
-            transition: background 0.2s;
-            white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+            transition: background 0.2s; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
         }
-        .btn-notice.urgent { background: #ea580c; }      /* 未通知：オレンジ */
+        .btn-notice.urgent { background: #ea580c; }
         .btn-notice.urgent:hover { background: #c2410c; }
-        .btn-notice.replied { background: #9ca3af; }     /* 通知済：灰色 */
+        .btn-notice.replied { background: #9ca3af; }
         .btn-notice.replied:hover { background: #4b5563; }
 
-        /* ===== モーダル（共通背景） ===== */
+        /* ===== モーダル ===== */
         .modal-mask { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.82); align-items: center; justify-content: center; flex-direction: column; }
         .modal-mask.open { display: flex; }
         
-        /* 画像モーダル専用設定 */
         .modal-header { width: 100%; max-width: 900px; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; color: white; }
         .modal-counter { font-size: 15px; font-weight: bold; opacity: 0.9; }
         .modal-close { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 15px; font-weight: bold; }
@@ -154,14 +152,12 @@
         .open-external { margin-left: auto; background: rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: flex; align-items: center; }
         .open-external:hover { background: rgba(255,255,255,0.3); }
 
-        /* テキスト確認モーダル専用窓 */
         .text-window { background: white; width: 90%; max-width: 550px; border-radius: 8px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 16px; }
         .text-window-title { font-size: 16px; font-weight: bold; color: #333; margin: 0; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; }
         .text-window-content { font-size: 14px; color: #1e293b; white-space: pre-wrap; line-height: 1.6; max-height: 300px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
         .text-window-close { background: #4b5563; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: bold; cursor: pointer; text-align: center; }
         .text-window-close:hover { background: #374151; }
 
-        /* 【新設】LINE通知配信用モーダルスタイル */
         .notice-window { background: white; width: 90%; max-width: 500px; border-radius: 12px; padding: 24px; box-shadow: 0 20px 40px rgba(0,0,0,0.4); display: flex; flex-direction: column; gap: 14px; }
         .notice-select { width: 100%; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #cbd5e1; background: #f8fafc; }
         .notice-textarea { width: 100%; height: 100px; padding: 10px; font-size: 14px; border-radius: 6px; border: 1px solid #cbd5e1; resize: none; font-family: sans-serif; }
@@ -208,6 +204,7 @@
     <tbody></tbody>
 </table>
 
+<!-- 各種モーダル -->
 <div id="imgModal" class="modal-mask">
     <div class="modal-header">
         <span class="modal-counter" id="modalCounter"></span>
@@ -264,13 +261,12 @@
     const targetShopName = SHOP_MASTER[urlParams.get('p')] || '';
     document.getElementById('shopName').innerText = targetShopName || '⚠️ 全店舗のデータを表示中';
 
-    // ===== 状態管理 =====
     let isAudioEnabled = false;
     let volumeInterval = null, countdownInterval = null;
     let isAlerting = false, muteUntilTime = 0;
     let globalHasUnread = false, isFetching = false;
     let pendingCheckIds = new Set();
-    let currentNoticeId = null; // 現在通知処理中の受付ID
+    let currentNoticeId = null;
     const MUTE_DURATION = 60000;
     const sound = document.getElementById('noticeSound');
     const audioBanner = document.getElementById('audioBanner');
@@ -280,8 +276,7 @@
 
     document.getElementById('initBtn').addEventListener('click', () => {
         sound.play().then(() => {
-            sound.pause();
-            sound.currentTime = 0;
+            sound.pause(); sound.currentTime = 0;
             isAudioEnabled = true;
             audioBanner.classList.add('hidden');
             statusText.innerText = '状態: 定期監視中...';
@@ -289,23 +284,16 @@
             fetchData();
         }).catch(err => {
             console.error(err);
-            alert('音声の有効化に失敗しました。ページを再読み込みしてもう一度お試しください。');
+            alert('音声の有効化に失敗しました。');
         });
     });
 
     muteMasterBtn.addEventListener('click', triggerMute);
 
-    // ===== 定型文テンプレートのトグル切り替え =====
     document.getElementById('noticeTemplateSelect').addEventListener('change', (e) => {
-        const wrap = document.getElementById('customTextWrap');
-        if (e.target.value === 'custom') {
-            wrap.style.display = 'flex';
-        } else {
-            wrap.style.display = 'none';
-        }
+        document.getElementById('customTextWrap').style.display = (e.target.value === 'custom') ? 'flex' : 'none';
     });
 
-    // ===== アラート制御 =====
     function startAlert() {
         if (isAlerting || !isAudioEnabled || Date.now() < muteUntilTime) return;
         isAlerting = true;
@@ -326,8 +314,7 @@
     function stopAlert() {
         if (!isAlerting) return;
         isAlerting = false;
-        sound.pause();
-        sound.currentTime = 0;
+        sound.pause(); sound.currentTime = 0;
         clearInterval(volumeInterval);
         statusDot.classList.remove('alerting');
         muteMasterBtn.classList.remove('visible');
@@ -361,7 +348,6 @@
         }, 1000);
     }
 
-    // ===== データ同期処理 =====
     function fetchData() {
         if (!isAudioEnabled || isFetching) return;
         isFetching = true;
@@ -373,10 +359,7 @@
                 tbody.innerHTML = '';
                 let hasUnread = false;
 
-                // フィルタリング（店舗指定がある場合）
                 const filtered = data.filter(row => !targetShopName || row['受付店舗'] === targetShopName);
-                
-                // 新しい順に並び替え
                 filtered.sort((a,b) => new Date(b['日時']) - new Date(a['日時']));
 
                 filtered.forEach(row => {
@@ -396,7 +379,6 @@
                     // 2. 患者名 / LINE名
                     const tdPatient = document.createElement('td');
                     tdPatient.className = 'col-patient';
-                    
                     const nameDisp = document.createElement('div');
                     nameDisp.className = 'patient-name-display';
                     nameDisp.innerText = row['患者名'] || '(未登録)';
@@ -409,20 +391,15 @@
 
                     const editWrap = document.createElement('div');
                     editWrap.className = 'inline-edit-wrap';
-                    
                     const inputP = document.createElement('input');
-                    inputP.type = 'text';
-                    inputP.className = 'patient-input';
-                    inputP.value = row['患者名'] || '';
-                    inputP.placeholder = '患者名を入力';
+                    inputP.type = 'text'; inputP.className = 'patient-input';
+                    inputP.value = row['患者名'] || ''; inputP.placeholder = '患者名を入力';
                     editWrap.appendChild(inputP);
 
                     const btnSaveP = document.createElement('button');
-                    btnSaveP.className = 'btn-save-inline';
-                    btnSaveP.innerText = '保存';
+                    btnSaveP.className = 'btn-save-inline'; btnSaveP.innerText = '保存';
                     const okSpan = document.createElement('span');
-                    okSpan.className = 'save-ok';
-                    okSpan.innerText = '✓';
+                    okSpan.className = 'save-ok'; okSpan.innerText = '✓';
                     
                     btnSaveP.onclick = () => {
                         btnSaveP.disabled = true;
@@ -430,29 +407,23 @@
                             .then(() => { okSpan.style.display = 'inline'; setTimeout(() => { okSpan.style.display = 'none'; }, 2000); })
                             .finally(() => btnSaveP.disabled = false);
                     };
-                    editWrap.appendChild(btnSaveP);
-                    editWrap.appendChild(okSpan);
-                    tdPatient.appendChild(editWrap);
-                    tr.appendChild(tdPatient);
+                    editWrap.appendChild(btnSaveP); editWrap.appendChild(okSpan);
+                    tdPatient.appendChild(editWrap); tr.appendChild(tdPatient);
 
                     // 3. 受付番号
                     const tdRep = document.createElement('td');
                     tdRep.className = 'col-repno';
                     const wrapRep = document.createElement('div');
                     wrapRep.className = 'inline-edit-wrap';
-                    
                     const inputNo = document.createElement('input');
-                    inputNo.type = 'text';
-                    inputNo.className = 'no-input';
+                    inputNo.type = 'text'; inputNo.className = 'no-input';
                     inputNo.value = row['受付番号'] || '';
                     wrapRep.appendChild(inputNo);
 
                     const btnSaveNo = document.createElement('button');
-                    btnSaveNo.className = 'btn-save-inline btn-blue';
-                    btnSaveNo.innerText = '確定';
+                    btnSaveNo.className = 'btn-save-inline btn-blue'; btnSaveNo.innerText = '確定';
                     const okSpanNo = document.createElement('span');
-                    okSpanNo.className = 'save-ok';
-                    okSpanNo.innerText = '✓';
+                    okSpanNo.className = 'save-ok'; okSpanNo.innerText = '✓';
 
                     btnSaveNo.onclick = () => {
                         btnSaveNo.disabled = true;
@@ -460,15 +431,13 @@
                             .then(() => { okSpanNo.style.display = 'inline'; setTimeout(() => { okSpanNo.style.display = 'none'; }, 2000); })
                             .finally(() => btnSaveNo.disabled = false);
                     };
-                    wrapRep.appendChild(btnSaveNo);
-                    wrapRep.appendChild(okSpanNo);
-                    tdRep.appendChild(wrapRep);
-                    tr.appendChild(tdRep);
+                    wrapRep.appendChild(btnSaveNo); wrapRep.appendChild(okSpanNo);
+                    tdRep.appendChild(wrapRep); tr.appendChild(tdRep);
 
-                    // 4. 処方箋（画像・メッセージテキスト）
+                    // 4. 処方箋（【修正】データ項目キーを正しく修復）
                     const tdPresc = document.createElement('td');
                     tdPresc.className = 'col-prescription';
-                    const rawContent = row['画像URL'] || '';
+                    const rawContent = row['テキスト / 画像URL'] || '';
 
                     if (rawContent.startsWith('http')) {
                         const imgContainer = document.createElement('div');
@@ -476,38 +445,42 @@
                         const urls = rawContent.split(',');
                         urls.forEach((u, idx) => {
                             const btn = document.createElement('button');
-                            btn.className = 'img-link';
-                            btn.innerText = `枚数 ${idx + 1}`;
+                            btn.className = 'img-link'; btn.innerText = `枚数 ${idx + 1}`;
                             btn.onclick = () => openImgModal(urls, idx);
                             imgContainer.appendChild(btn);
                         });
                         if (urls.length > 1) {
                             const btnAll = document.createElement('button');
-                            btnAll.className = 'img-link-all';
-                            btnAll.innerText = `全 ${urls.length} 枚を連続確認`;
+                            btnAll.className = 'img-link-all'; btnAll.innerText = `全 ${urls.length} 枚を連続確認`;
                             btnAll.onclick = () => openImgModal(urls, 0);
                             imgContainer.appendChild(btnAll);
                         }
                         tdPresc.appendChild(imgContainer);
                     } else {
-                        const textWrap = document.createElement('div');
-                        textWrap.className = 'text-preview-box';
-                        const shortText = rawContent.length > 15 ? rawContent.substring(0, 15) + '...' : rawContent;
-                        textWrap.appendChild(document.createTextNode(shortText));
-                        
-                        // 【改善】HTML内に直に展開せず、ボタン要素のDatasetに安全に格納
-                        const btnMore = document.createElement('button');
-                        btnMore.className = 'btn-text-more';
-                        btnMore.innerText = '全文確認';
-                        btnMore.dataset.fulltext = rawContent; 
-                        btnMore.onclick = (e) => openTextModal(e.target.dataset.fulltext);
-                        
-                        textWrap.appendChild(btnMore);
-                        tdPresc.appendChild(textWrap);
+                        // 【修正】30文字を超える場合のみ「全文確認」ボタン化する本来の形に修復
+                        if (rawContent.length > 30) {
+                            const textWrap = document.createElement('div');
+                            textWrap.className = 'text-preview-box';
+                            const shortText = rawContent.substring(0, 30) + '...';
+                            textWrap.appendChild(document.createTextNode(shortText));
+                            
+                            const btnMore = document.createElement('button');
+                            btnMore.className = 'btn-text-more'; btnMore.innerText = '全文確認';
+                            btnMore.dataset.fulltext = rawContent;
+                            btnMore.onclick = (e) => openTextModal(e.target.dataset.fulltext);
+                            
+                            textWrap.appendChild(btnMore);
+                            tdPresc.appendChild(textWrap);
+                        } else {
+                            const textSpan = document.createElement('span');
+                            textSpan.style.fontSize = '13px';
+                            textSpan.innerText = rawContent;
+                            tdPresc.appendChild(textSpan);
+                        }
                     }
                     tr.appendChild(tdPresc);
 
-                    // 5. 受付（確認完了ボタン）
+                    // 5. 受付アクション
                     const tdAction = document.createElement('td');
                     tdAction.className = 'col-action';
                     if (!isDone) {
@@ -516,13 +489,11 @@
                         btnChk.innerText = pendingCheckIds.has(id) ? '処理中..' : '確認完了';
                         btnChk.disabled = pendingCheckIds.has(id);
                         btnChk.onclick = () => {
-                            pendingCheckIds.add(id);
-                            btnChk.innerText = '処理中..';
-                            btnChk.disabled = true;
+                            pendingCheckIds.add(id); btnChk.innerText = '処理中..'; btnChk.disabled = true;
                             fetch(`${GAS_URL}?id=${id}`)
                                 .then(res => res.json())
                                 .then(() => { pendingCheckIds.delete(id); fetchData(); })
-                                .catch(err => { console.error(err); alert('通信エラーが発生しました'); pendingCheckIds.delete(id); fetchData(); });
+                                .catch(err => { console.error(err); pendingCheckIds.delete(id); fetchData(); });
                         };
                         tdAction.appendChild(btnChk);
                     } else {
@@ -530,14 +501,12 @@
                     }
                     tr.appendChild(tdAction);
 
-                    // 6. 通知ボタン（J列「通知状況」によるデザイン変更対応）
+                    // 6. 通知ボタン
                     const tdNotice = document.createElement('td');
                     tdNotice.className = 'col-notice';
-                    
                     const btnNotice = document.createElement('button');
                     const noticeStatus = row['通知状況'] || '';
                     
-                    // スプレッドシートのJ列「通知状況」を判定して色と文字を変更
                     if (noticeStatus === '通知済') {
                         btnNotice.className = 'btn-notice replied';
                         btnNotice.innerText = '通知済み (再送可)';
@@ -546,11 +515,8 @@
                         btnNotice.innerText = 'LINE通知';
                     }
                     
-                    // 何度でもクリックしてモーダルを開ける
                     btnNotice.onclick = () => openNoticeModal(id);
-                    tdNotice.appendChild(btnNotice);
-                    tr.appendChild(tdNotice);
-
+                    tdNotice.appendChild(btnNotice); tr.appendChild(tdNotice);
                     tbody.appendChild(tr);
                 });
 
@@ -574,17 +540,13 @@
         return fetch(url).then(res => res.json());
     }
 
-    // ===== LINE通知モーダルの制御ロジック =====
     function openNoticeModal(id) {
         currentNoticeId = id;
         document.getElementById('noticeTemplateSelect').value = 'template';
         document.getElementById('customTextWrap').style.display = 'none';
         document.getElementById('noticeCustomText').value = '';
-        
         const msgDiv = document.getElementById('noticeStatusMessage');
-        msgDiv.style.display = 'none';
-        msgDiv.innerText = '';
-        
+        msgDiv.style.display = 'none'; msgDiv.innerText = '';
         document.getElementById('noticeModal').classList.add('open');
     }
 
@@ -593,7 +555,6 @@
         currentNoticeId = null;
     }
 
-    // モーダル内送信ボタン押下時の処理
     document.getElementById('executeNoticeBtn').addEventListener('click', () => {
         if (!currentNoticeId) return;
 
@@ -608,44 +569,31 @@
         }
 
         const msgDiv = document.getElementById('noticeStatusMessage');
-        msgDiv.style.display = 'block';
-        msgDiv.style.color = '#333';
-        msgDiv.innerText = '⏳ LINE通知を送信中...';
+        msgDiv.style.display = 'block'; msgDiv.style.color = '#333'; msgDiv.innerText = '⏳ LINE通知を送信中...';
 
         const sendBtn = document.getElementById('executeNoticeBtn');
         sendBtn.disabled = true;
 
-        // パラメータ組み立て
         let url = `${GAS_URL}?update=true&id=${currentNoticeId}&notice=true`;
-        if (type === 'custom') {
-            url += `&customText=${encodeURIComponent(customText)}`;
-        }
+        if (type === 'custom') url += `&customText=${encodeURIComponent(customText)}`;
 
         fetch(url)
             .then(res => res.json())
             .then(resData => {
                 if (resData.status === 'notice_sent') {
-                    msgDiv.style.color = '#10b981';
-                    msgDiv.innerText = '✅ LINE通知の送信に成功しました！';
-                    setTimeout(() => {
-                        closeNoticeModal();
-                        fetchData(); // 画面を更新してボタンを灰色に
-                    }, 1500);
+                    msgDiv.style.color = '#10b981'; msgDiv.innerText = '✅ LINE通知の送信に成功しました！';
+                    setTimeout(() => { closeNoticeModal(); fetchData(); }, 1500);
                 } else {
-                    throw new Error('サーバーエラーが発生しました');
+                    throw new Error('サーバーエラー');
                 }
             })
             .catch(err => {
                 console.error(err);
-                msgDiv.style.color = '#ef4444';
-                msgDiv.innerText = '❌ 送信エラーが発生しました。インターネット接続やGASの設定を確認してください。';
+                msgDiv.style.color = '#ef4444'; msgDiv.innerText = '❌ 送信エラーが発生しました。';
             })
-            .finally(() => {
-                sendBtn.disabled = false;
-            });
+            .finally(() => { sendBtn.disabled = false; });
     });
 
-    // ===== 各種モーダル制御用共通スクリプト =====
     let modalUrls = [], modalIndex = 0;
     const imgModal = document.getElementById('imgModal');
     const textModal = document.getElementById('textModal');
