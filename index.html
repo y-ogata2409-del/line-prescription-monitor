@@ -230,9 +230,26 @@
             <label style="font-weight:bold; font-size:13px; color:#4b5563; display:block; margin-bottom:4px;">メッセージ内容</label>
             <textarea id="noticeMessage" style="width:100%; height:120px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:14px; resize:none; font-family:sans-serif;"></textarea>
         </div>
-        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:4px;">
-            <button class="text-window-close" style="background:#6b7280; margin:0; padding:8px 14px; font-size:13px;" onclick="closeNoticeModal()">キャンセル</button>
-            <button class="btn-notice" style="padding:8px 14px; font-size:13px;" id="submitNoticeBtn">送信する</button>
+        
+        <div id="aiOptions" style="font-size:12px; color:#4b5563; display:flex; flex-direction:column; gap:4px; margin-top:4px; border-top:1px dashed #cbd5e1; padding-top:8px;">
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="checkbox" id="aiOptWelcome"> 冒頭に「LINE受付ありがとうございます」の文言を追加
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="checkbox" id="aiOptHours"> 営業時間のご案内を追加（平日 8:30〜17:30 / 土曜 8:30〜12:30 / 日祝 休業）
+            </label>
+            <label style="display:flex; align-items:center; gap:6px; cursor:pointer;">
+                <input type="checkbox" id="aiOptLimit"> 処方箋の有効期限の注意を追加（当日を含めて4日間）
+            </label>
+        </div>
+
+        <div style="display:flex; gap:8px; justify-content:space-between; align-items:center; margin-top:12px;">
+            <button class="btn-save-inline btn-blue" style="padding:8px 14px; font-size:13px; background:#6366f1; margin:0;" id="aiPolishBtn">✨ AIによる校正・推敲</button>
+            
+            <div style="display:flex; gap:8px; justify-content:flex-end;">
+                <button class="text-window-close" style="background:#6b7280; margin:0; padding:8px 14px; font-size:13px;" onclick="closeNoticeModal()">キャンセル</button>
+                <button class="btn-notice" style="padding:8px 14px; font-size:13px;" id="submitNoticeBtn">送信する</button>
+            </div>
         </div>
     </div>
 </div>
@@ -452,6 +469,56 @@
                 console.error(err);
                 alert('LINE通知送信中にエラーが発生しました。インターネット接続を確認してください。');
             });
+    });
+
+    // AI校正ボタンのクリックイベント
+    document.getElementById('aiPolishBtn').addEventListener('click', async () => {
+        const textValue = document.getElementById('noticeMessage').value;
+        const aiBtn = document.getElementById('aiPolishBtn');
+        
+        // 入力値のチェック
+        if (!textValue.trim()) {
+            alert('推敲するメッセージ内容を入力してください。');
+            return;
+        }
+        
+        // チェックボックスの状態を取得
+        const optWelcome = document.getElementById('aiOptWelcome').checked;
+        const optHours = document.getElementById('aiOptHours').checked;
+        const optLimit = document.getElementById('aiOptLimit').checked;
+        
+        // ボタンの無効化（2重押し防止）
+        aiBtn.disabled = true;
+        aiBtn.innerText = '⏳ AI推敲中...';
+        
+        try {
+            // GASへリクエストを投げる
+            const params = new URLSearchParams({
+                aiPolish: 'true',
+                text: textValue,
+                welcome: optWelcome,
+                hours: optHours,
+                limit: optLimit
+            });
+            
+            const res = await fetch(`${GAS_URL}?${params.toString()}`);
+            const result = await res.json();
+            
+            if (result.status === 'success' && result.polishedText) {
+                // テキストエリアを書き換える
+                document.getElementById('noticeMessage').value = result.polishedText;
+                // テンプレート選択を「自由入力」に切り替える
+                document.getElementById('noticeTemplate').value = 'custom';
+            } else {
+                alert('AIによる推敲に失敗しました: ' + (result.error || '不明なエラー'));
+            }
+        } catch (err) {
+            console.error(err);
+            alert('通信エラーが発生しました。');
+        } finally {
+            aiBtn.disabled = false;
+            aiBtn.innerText = '✨ AIによる校正・推敲';
+        }
     });
 
     // ===== 患者名のみを非同期で保存 =====
