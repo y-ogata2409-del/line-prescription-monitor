@@ -750,10 +750,7 @@
         // if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
     });
 
-    // ===== 起動 =====
-    fetchData();
-    setInterval(fetchData, 10000);
-
+    // ─── ここからAIボタンの処理を追加 ───
     // AIによる校正・推敲ボタンのクリックイベント
     document.getElementById('aiRefineBtn').addEventListener('click', () => {
         const messageArea = document.getElementById('noticeMessage');
@@ -797,6 +794,11 @@
             })
             .refineMessageWithAI(rawText, currentShop, options);
     });
+    // ─── ここまでAIボタンの処理を追加 ───
+    
+    // ===== 起動 =====
+    fetchData();
+    setInterval(fetchData, 10000);
 </script>
 </body>
 </html>
