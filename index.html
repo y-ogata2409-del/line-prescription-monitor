@@ -579,33 +579,44 @@
             }
             tr.classList.toggle('done', isDone);
 
-            // ── ここから追加 ──
-            tr.style.cursor = 'pointer'; // 行全体にホバーしたときにポインタを変える
+            // ── ここから差し替え ──
+            // 処方箋の列（.col-prescription）を取得
+            const prescriptionTd = tr.querySelector('.col-prescription');
+            if (prescriptionTd) {
+                prescriptionTd.style.cursor = 'pointer'; // 処方箋の列だけポインタを変える
 
-            tr.addEventListener('click', (e) => {
-                // 入力枠やボタン、またはそれらの中身をクリックした場合はモーダルを開かない
-                if (e.target.closest('input') || e.target.closest('button') || e.target.closest('select') || e.target.closest('a')) {
-                    return;
-                }
+                prescriptionTd.addEventListener('click', (e) => {
+                    // 処方箋列の中のボタン自体をクリックした場合は、二重動作を防ぐためここで何もしない
+                    if (e.target.closest('button')) {
+                        return;
+                    }
 
-                // テキストが長い場合の「全文確認」と同じ挙動
-                const textMoreBtn = tr.querySelector('.btn-text-more');
-                if (textMoreBtn) {
-                    textMoreBtn.click();
-                    return;
-                }
+                    // 1. テキストが長い場合の「全文確認」ボタンがあればクリック
+                    const textMoreBtn = prescriptionTd.querySelector('.btn-text-more');
+                    if (textMoreBtn) {
+                        textMoreBtn.click();
+                        return;
+                    }
 
-                // 画像の場合の「処方箋を確認」等と同じ挙動
-                const imgAllBtn = tr.querySelector('.img-link-all');
-                const imgSingleBtn = tr.querySelector('.img-link');
-                
-                if (imgAllBtn) {
-                    imgAllBtn.click();
-                } else if (imgSingleBtn) {
-                    imgSingleBtn.click();
-                }
-            });
-            // ── ここまで追加 ──
+                    // 2. 複数枚画像、または単枚画像のボタンがあればクリック
+                    const imgAllBtn = prescriptionTd.querySelector('.img-link-all');
+                    const imgSingleBtn = prescriptionTd.querySelector('.img-link');
+                    if (imgAllBtn) {
+                        imgAllBtn.click();
+                        return;
+                    } else if (imgSingleBtn) {
+                        imgSingleBtn.click();
+                        return;
+                    }
+
+                    // 3. 【追加機能】文字数が少なくてボタンがないテキストの場合
+                    // rawContent（元のテキスト）をそのままテキストモーダルで開く
+                    if (rawContent && !String(rawContent).startsWith('http')) {
+                        openTextModal(rawContent);
+                    }
+                });
+            }
+            // ── ここまで差し替え ──
         });
 
         // 配列ソート
