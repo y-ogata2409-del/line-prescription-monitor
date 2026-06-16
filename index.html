@@ -72,7 +72,7 @@
         th { background-color: #4b5563; color: #ffffff !important; font-size: 13px; font-weight: bold; }
         tr.done td { background-color: #f3f4f6; }
 
-        /* 【幅指定の最適化】各列の横幅を厳格に固定 */
+        /* 幅指定の固定 */
         .col-date { width: 140px; font-size: 13px; color: #1e293b; }
         .col-patient { width: 230px; }
         .col-no { width: 115px; }
@@ -86,7 +86,7 @@
             border-radius: 4px; font-size: 14px; text-align: center;
         }
         .no-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
-        tr.done .no-input { background: #f3f4f6; color: #9ca3af; }
+        tr.done .no-input { background: #e5e7eb; color: #6b7280; }
 
         /* 患者名 */
         .patient-name-display { font-weight: bold; color: #1e293b; font-size: 14px; }
@@ -101,6 +101,7 @@
             border-radius: 4px; font-size: 13px; color: #1e293b; min-width: 0; background: #f8fafc;
         }
         .patient-input:focus { outline: none; border-color: #6366f1; background: white; }
+        tr.done .patient-input { background: #e5e7eb; border-color: #d1d5db; }
         
         .btn-save-patient {
             background: #6366f1; color: white; border: none; border-radius: 4px;
@@ -125,11 +126,11 @@
         .btn-check { background: #ef4444; color: white; padding: 7px 0; width: 82px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; text-align: center; flex-shrink: 0; display: inline-block; }
         .btn-check:hover { background: #dc2626; }
 
-        /* 通知ボタン（通常と送信済みグレーアウトのカラー定義） */
+        /* 通知ボタン */
         .btn-notice { background: #ea580c; color: white; padding: 7px 0; width: 76px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; text-align: center; flex-shrink: 0; display: inline-block; }
         .btn-notice:hover { background: #c2410c; }
         .btn-notice.already-sent { background: #cbd5e1 !important; color: #64748b !important; font-weight: normal; }
-        .btn-notice.already-sent:hover { background: #b91c1c !important; color: white !important; font-weight: bold; } /* 送信済みのときホールドしても再送可能とわかるように */
+        .btn-notice.already-sent:hover { background: #b91c1c !important; color: white !important; font-weight: bold; }
 
         .reception-id { font-size: 10px; color: #94a3b8; font-family: monospace; margin-top: 2px; }
 
@@ -153,17 +154,15 @@
         .open-external { margin-left: auto; background: rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: flex; align-items: center; }
         .open-external:hover { background: rgba(255,255,255,0.3); }
 
-        /* 長文確認・通知確認ウィンドウ */
+        /* 確認ウィンドウ */
         .text-window { background: white; width: 90%; max-width: 480px; border-radius: 12px; padding: 22px; box-shadow: 0 15px 35px rgba(0,0,0,0.35); display: flex; flex-direction: column; gap: 14px; animation: windowScale 0.2s ease-out; }
         @keyframes windowScale { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .text-window-title { font-size: 17px; font-weight: bold; color: #1e293b; margin: 0; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
         .text-window-content { font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.6; max-height: 250px; overflow-y: auto; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
         
-        /* 💡 自由記述用のテキストエリアのスタイル */
         .notice-textarea { width: 100%; height: 90px; padding: 10px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; resize: none; font-family: sans-serif; }
         .notice-textarea:focus { outline: none; border-color: #ea580c; box-shadow: 0 0 0 2px rgba(234,88,12,0.15); }
 
-        /* モーダル用ボタンレイアウト */
         .modal-btn-wrap { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
         .btn-modal-cancel { background: #e2e8f0; color: #475569; border: none; border-radius: 6px; padding: 10px 18px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-modal-cancel:hover { background: #cbd5e1; }
@@ -362,18 +361,16 @@
         const okBtn = document.getElementById('noticeOkBtn');
         const cancelBtn = document.getElementById('noticeCancelBtn');
 
-        // モーダルの表示・入力値をリセット
         title.innerHTML = "💬 LINE通知の送信確認";
         instruction.style.display = "block";
         txtInput.style.display = "block";
-        txtInput.value = ""; // 前回入力した文字をクリア
+        txtInput.value = ""; 
         btnWrap.style.display = "flex";
         okBtn.disabled = false;
         okBtn.textContent = "送信する";
 
         modal.classList.add('open');
 
-        // 送信ボタンクリック時の非同期処理
         okBtn.onclick = async () => {
             okBtn.disabled = true;
             okBtn.textContent = "送信中...";
@@ -381,21 +378,17 @@
             const customMessageValue = txtInput.value;
 
             try {
-                // GASに自由記述テキストも含めて送信
                 const res = await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&customMessage=${encodeURIComponent(customMessageValue)}`);
                 const json = await res.json();
                 if (json.status === 'notice_sent') {
-                    // モーダルの中身を「完了画面」に切り替え
                     title.innerHTML = "🎉 送信完了";
                     instruction.innerHTML = "患者のLINEへ通知メッセージを正常に送信しました。";
                     txtInput.style.display = "none";
-                    btnWrap.style.display = "none"; // ボタンエリアを非表示
+                    btnWrap.style.display = "none"; 
                     
-                    // 【修正】テーブル側のボタンを「送信済（灰色）」にするが、disabled（ロック）にはしない
                     btnElement.classList.add('already-sent');
                     btnElement.textContent = "送信済";
 
-                    // 1.5秒後に自動でモーダルを閉じる
                     setTimeout(() => modal.classList.remove('open'), 1500);
                 } else {
                     alert('通知応答エラーが発生しました。');
@@ -451,7 +444,8 @@
 
         sorted.forEach(row => {
             const rid    = row['受付ID'] || '';
-            const isDone = row['ステータas'] === '確認済' || pendingCheckIds.has(rid);
+            // 💡 【修正】タイポ 'ステータas' を元の正確な 'ステータス' に直しました
+            const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
             if (!tr) {
@@ -585,7 +579,6 @@
                 const noticeBtn = document.createElement('button');
                 noticeBtn.className = 'btn-notice';
                 
-                // GASの「通知状況」列が「通知済」なら最初から灰色(already-sent)にするが、クリックは可能にする
                 if (row['通知状況'] === '通知済') {
                     noticeBtn.classList.add('already-sent');
                     noticeBtn.textContent = '送信済';
@@ -609,7 +602,6 @@
                 if (noInput && !noInput.matches(':focus') && row['受付番号'] !== undefined && noInput.value === '') {
                     noInput.value = row['受付番号'] || '';
                 }
-                // 通知ステータスの同期（灰色に変化させるが、ロックはしない）
                 const nBtn = tr.querySelector('.btn-notice');
                 if (nBtn && row['通知状況'] === '通知済' && !nBtn.classList.contains('already-sent')) {
                     nBtn.classList.add('already-sent');
