@@ -69,38 +69,32 @@
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
         th { background-color: #4b5563; color: white; font-size: 13px; }
-        tr.done td { background-color: #f3f4f6; }
+        
+        /* 【修正】確認済でも背景だけを薄い灰色にし、文字は黒色をキープします */
+        tr.done td { background-color: #f9fafb; }
 
-        /* 各列の幅指定 */
-        .col-no { width: 90px; text-align: center; }
-        .col-date { width: 140px; font-size: 13px; }
+        /* 各列の幅指定（登録ボタン列を削除したため幅を調整） */
+        .col-date { width: 140px; font-size: 13px; color: #1e293b; }
         .col-patient { min-width: 260px; }
         .col-repno { width: 170px; }
-        .col-prescription { min-width: 200px; }
+        .col-prescription { min-width: 200px; color: #1e293b; }
         .col-action { width: 110px; }
-
-        /* 登録ボタン */
-        .btn-register-row {
-            background-color: #3b82f6;
-            color: white; border: none; padding: 6px 12px;
-            border-radius: 4px; font-size: 13px; font-weight: bold;
-            cursor: pointer; transition: background 0.2s;
-        }
-        .btn-register-row:hover { background-color: #2563eb; }
-        tr.done .btn-register-row { background-color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
 
         /* 受付番号入力枠 */
         .no-input {
             width: 65px; padding: 5px 6px; border: 1px solid #d1d5db;
             border-radius: 4px; font-size: 14px; text-align: center;
+            color: #1e293b; background: white;
         }
         .no-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
-        tr.done .no-input { background: #f3f4f6; color: #9ca3af; }
+        /* 【修正】確認済になっても入力枠の文字を黒のまま維持 */
+        tr.done .no-input { background: #f3f4f6; color: #1e293b; }
 
         /* 患者名表示 */
+        /* 【修正】確認済になっても患者名の文字を濃い黒（#1e293b）のまま維持 */
         .patient-name-display { font-weight: bold; color: #1e293b; font-size: 15px; }
         .line-name-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
-        tr.done .patient-name-display { color: #9ca3af; }
+        tr.done .patient-name-display { color: #1e293b; }
 
         /* インライン編集レイアウト */
         .inline-edit-wrap { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
@@ -175,7 +169,6 @@
 <table id="dataTable">
     <thead>
         <tr>
-            <th class="col-no">No.</th>
             <th class="col-date">日時</th>
             <th class="col-patient">患者名 / LINE名</th>
             <th class="col-repno">受付番号</th>
@@ -247,7 +240,7 @@
         clearInterval(volumeInterval);
         sound.volume = 0.1;
         sound.play().catch(e => console.log(e));
-        statusText.innerText = '🚨 未確認の処方箋があります！';
+        statusText.innerText = '🚨 未確認 of 処方箋があります！';
         statusText.style.color = '#ef4444';
         statusDot.classList.add('alerting');
         muteMasterBtn.classList.add('visible');
@@ -308,51 +301,50 @@
         finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
     }
 
-    // ===== 【修正】一番左の「登録」ボタンが押されたときの処理 =====
-    async function registerRowDirect(receptionId) {
-        if(!confirm("この受付の基幹システム等への登録処理を実行しますか？")) return;
-        
-        // 現状、別の独自登録処理のURLが用意されるまでは、確認用にアラートを出すか、任意の通信を行えます。
-        // ここでは単独の処理として「登録完了」のログ出しと通知のみ行います（確認完了とは連動しません）。
-        alert("登録処理を実行しました。");
-        
-        // もし将来的にGAS側に ?register=true などの専用処理を作る場合は以下のように通信できます。
-        // await fetch(`${GAS_URL}?register=true&id=${encodeURIComponent(receptionId)}`);
-    }
-
-    // ===== 患者名のみを個別に保存 =====
-    async function savePatientNameOnly(receptionId) {
+    // ===== 【修正】患者名のみを非同期（即チェック表示）で保存 =====
+    function savePatientNameOnly(receptionId) {
         const inputEl = document.getElementById(`pinput-${receptionId}`);
         const okEl = document.getElementById(`pok-${receptionId}`);
         if (!inputEl) return;
         
         const patientName = inputEl.value;
-        try {
-            await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`);
-            okEl.style.display = 'inline';
-            setTimeout(() => { okEl.style.display = 'none'; }, 2000);
-            setTimeout(fetchData, 1000); // 1秒後に名前（〇〇 様）の表示を更新
-        } catch (err) { 
-            console.error(err); 
-            alert('患者名の保存に失敗しました');
+
+        // ★ 楽観的UI（非同期）: GASのレスポンスを待たずに、ボタンを押した瞬間に「✓」を即座に表示！
+        okEl.style.display = 'inline';
+        setTimeout(() => { okEl.style.display = 'none'; }, 2000);
+
+        // 画面上のメインの「〇〇 様」表示もその場で即仮更新して違和感をなくします
+        const nameDisp = inputEl.closest('td').querySelector('.patient-name-display');
+        if (nameDisp) {
+            nameDisp.textContent = patientName ? `${patientName} 様` : '（未登録）';
         }
+
+        // 裏側でバックグラウンド通信（awaitを外して関数を終了させる）
+        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`)
+            .catch(err => {
+                console.error(err);
+                alert('患者名の保存で通信エラーが発生しました。再読込してください。');
+            });
     }
 
-    // ===== 受付番号のみを個別に保存 =====
-    async function saveReceptionNoOnly(receptionId) {
+    // ===== 【修正】受付番号のみを非同期（即チェック表示）で保存 =====
+    function saveReceptionNoOnly(receptionId) {
         const inputEl = document.getElementById(`noinput-${receptionId}`);
         const okEl = document.getElementById(`nook-${receptionId}`);
         if (!inputEl) return;
 
         const value = inputEl.value;
-        try {
-            await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&receptionNo=${encodeURIComponent(value)}`);
-            okEl.style.display = 'inline';
-            setTimeout(() => { okEl.style.display = 'none'; }, 2000);
-        } catch (err) { 
-            console.error(err); 
-            alert('受付番号の保存に失敗しました');
-        }
+
+        // ★ 楽観的UI（非同期）: ボタンを押した瞬間に「✓」を即座に表示！
+        okEl.style.display = 'inline';
+        setTimeout(() => { okEl.style.display = 'none'; }, 2000);
+
+        // 裏側でバックグラウンド通信
+        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&receptionNo=${encodeURIComponent(value)}`)
+            .catch(err => {
+                console.error(err);
+                alert('受付番号の保存で通信エラーが発生しました。再読込してください。');
+            });
     }
 
     // ===== データ取得 =====
@@ -382,11 +374,10 @@
             const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
-            // 患者名に「様」を付けるロジック
             const rawPatientName = row['患者名'] ? String(row['患者名']).trim() : '';
             const displayPatientName = rawPatientName ? `${rawPatientName} 様` : '（未登録）';
 
-            // 処方箋（画像ボタンまたはテキスト）のHTML組み立て
+            // 処方箋（画像ボタンまたはテキスト）のHTML
             let prescriptionHtml = '';
             const rawContent = row['テキスト / 画像URL'] || '';
             if (rawContent.startsWith('http')) {
@@ -406,16 +397,13 @@
                 prescriptionHtml = `<span style="font-size:13px;">${rawContent}</span>`;
             }
 
-            // 対応（右端ボタン）のHTML組み立て
+            // 対応（右端ボタン）のHTML
             const actionHtml = isDone 
-                ? `<span style="color:#9ca3af;">確認済</span>` 
+                ? `<span style="color:#9ca3af; font-weight:bold;">確認済</span>` 
                 : `<button class="btn-check" onclick="checkRow('${rid}', this)">✔ 確認完了</button>`;
 
-            // 行全体のHTML構造（★ヘッダーの列順と完全に一致させてバグを排除★）
+            // 行全体のHTML構造（★登録ボタン列を削除し、完全に整理★）
             const rowInnerHTML = `
-                <td class="col-no">
-                    <button class="btn-register-row" onclick="registerRowDirect('${rid}')">登録</button>
-                </td>
                 <td class="col-date">${row['日時'] || ''}</td>
                 <td class="col-patient">
                     <div class="patient-name-display">${displayPatientName}</div>
@@ -438,7 +426,6 @@
             `;
 
             if (!tr) {
-                // 新規行作成
                 tr = document.createElement('tr');
                 tr.setAttribute('data-rid', rid);
                 tr.innerHTML = rowInnerHTML;
@@ -448,16 +435,18 @@
                 const pInput = tr.querySelector(`#pinput-${rid}`);
                 const noInput = tr.querySelector(`#noinput-${rid}`);
                 
-                // 表示名や対応ボタンをリフレッシュ
-                tr.querySelector('.patient-name-display').textContent = displayPatientName;
                 tr.querySelector('.col-prescription').innerHTML = prescriptionHtml;
                 tr.querySelector('.col-action').innerHTML = actionHtml;
 
+                // フォーカスが当たっていない場合のみ、画面の文字を同期
                 if (pInput && !pInput.matches(':focus')) {
                     pInput.value = rawPatientName;
+                    tr.querySelector('.patient-name-display').textContent = displayPatientName;
                 }
-                if (noInput && !noInput.matches(':focus') && row['受付番号'] !== undefined) {
-                    noInput.value = row['受付番号'] || '';
+                if (noInput && !noInput.matches(':focus')) {
+                    if (row['受付番号'] !== undefined) {
+                        noInput.value = row['受付番号'] || '';
+                    }
                 }
             }
             tr.classList.toggle('done', isDone);
