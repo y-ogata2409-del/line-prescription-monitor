@@ -67,7 +67,7 @@
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
         th { background-color: #4b5563; color: #ffffff !important; font-size: 13px; font-weight: bold; }
-        tr.done td { background-color: #f9fafb; }
+        tr.done td { background-color: #e5e7eb; }
 
         .col-date { width: 120px; font-size: 13px; color: #1e293b; }
         .col-patient { width: 240px; }
@@ -401,7 +401,7 @@
             const btnNotice = tr.querySelector('.btn-notice');
             if (btnNotice) {
                 btnNotice.className = 'btn-notice sent';
-                btnNotice.innerText = '💬 通知済';
+                btnNotice.innerText = '通知済';
             }
         }
 
@@ -528,7 +528,7 @@
             // ★修正ポイント：スプレッドシートの見出し「通知」に対応
             const isNoticeSent = (row['通知'] === '通知済' || localNoticeSentIds.has(rid));
             const btnClass = isNoticeSent ? 'btn-notice sent' : 'btn-notice';
-            const btnText = isNoticeSent ? '💬 通知済' : '💬 通知';
+            const btnText = isNoticeSent ? '通知済' : '💬 通知';
             const noticeHtml = `<button class="${btnClass}" onclick="sendLineNotice('${rid}')">${btnText}</button>`;
 
             const rowInnerHTML = `
@@ -578,6 +578,34 @@
                 }
             }
             tr.classList.toggle('done', isDone);
+
+            // ── ここから追加 ──
+            tr.style.cursor = 'pointer'; // 行全体にホバーしたときにポインタを変える
+
+            tr.addEventListener('click', (e) => {
+                // 入力枠やボタン、またはそれらの中身をクリックした場合はモーダルを開かない
+                if (e.target.closest('input') || e.target.closest('button') || e.target.closest('select') || e.target.closest('a')) {
+                    return;
+                }
+
+                // テキストが長い場合の「全文確認」と同じ挙動
+                const textMoreBtn = tr.querySelector('.btn-text-more');
+                if (textMoreBtn) {
+                    textMoreBtn.click();
+                    return;
+                }
+
+                // 画像の場合の「処方箋を確認」等と同じ挙動
+                const imgAllBtn = tr.querySelector('.img-link-all');
+                const imgSingleBtn = tr.querySelector('.img-link');
+                
+                if (imgAllBtn) {
+                    imgAllBtn.click();
+                } else if (imgSingleBtn) {
+                    imgSingleBtn.click();
+                }
+            });
+            // ── ここまで追加 ──
         });
 
         // 配列ソート
