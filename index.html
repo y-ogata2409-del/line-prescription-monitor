@@ -749,52 +749,6 @@
         // 枠外クリックで閉じないようにコメントアウト
         // if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
     });
-
-    // ─── ここからAIボタンの処理を追加 ───
-    // AIによる校正・推敲ボタンのクリックイベント
-    document.getElementById('aiRefineBtn').addEventListener('click', () => {
-        const messageArea = document.getElementById('noticeMessage');
-        const aiBtn = document.getElementById('aiRefineBtn');
-        const shopBadgeText = document.getElementById('shopName').innerText;
-        const currentShop = shopBadgeText.includes('⚠️') ? '薬局' : shopBadgeText;
-
-        const rawText = messageArea.value.trim();
-        if (!rawText) {
-            alert('校正するメッセージ内容を入力してください。');
-            return;
-        }
-
-        // チェックボックスの状態を取得
-        const options = {
-            thanks: document.getElementById('aiOptThanks').checked,
-            hours: document.getElementById('aiOptHours').checked,
-            expiry: document.getElementById('aiOptExpiry').checked
-        };
-
-        // ボタンをローディング状態にする
-        aiBtn.disabled = true;
-        aiBtn.style.opacity = '0.6';
-        aiBtn.innerText = '⏳ AIが推敲中...';
-
-        // GAS側の関数を呼び出す
-        google.script.run
-            .withSuccessHandler((refinedText) => {
-                // 成功したらテキストエリアに結果を反映
-                messageArea.value = refinedText;
-                // ローディング状態を解除
-                aiBtn.disabled = false;
-                aiBtn.style.opacity = '1';
-                aiBtn.innerText = '✨ AIによる校正・推敲';
-            })
-            .withFailureHandler((err) => {
-                alert('AI推敲中にエラーが発生しました: ' + err.message);
-                aiBtn.disabled = false;
-                aiBtn.style.opacity = '1';
-                aiBtn.innerText = '✨ AIによる校正・推敲';
-            })
-            .refineMessageWithAI(rawText, currentShop, options);
-    });
-    // ─── ここまでAIボタンの処理を追加 ───
     
     // ===== 起動 =====
     fetchData();
