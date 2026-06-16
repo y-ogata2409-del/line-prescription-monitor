@@ -45,7 +45,7 @@
         th { background: #f8fafc; color: #475569; font-weight: 600; font-size: 13px; }
         td { font-size: 14px; color: #1e293b; }
 
-        /* 【要望①】確認済み行の背景色を少し暗く調整 (#f9fafb から変更) */
+        /* 確認済み行の背景色を少し暗く調整 */
         tr.done td { background-color: #e5e7eb; }
 
         .btn { padding: 6px 12px; border: none; border-radius: 4px; font-size: 13px; cursor: pointer; font-weight: bold; }
@@ -181,7 +181,7 @@
         </div>
     </div>
 
-    <audio id="noticeSound" src="https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg" preload="auto"></audio>
+    <audio id="noticeSound" src="[https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg](https://actions.google.com/sounds/v1/alarms/digital_watch_alarm_long.ogg)" preload="auto"></audio>
 
 <script>
     let audioEnabled = false;
@@ -319,25 +319,19 @@
             }
             tr.classList.toggle('done', isDone);
 
-            // ─── 【要望③＆④】処方箋の列（.col-prescription）のみをクリック可能にする ───
+            // 処方箋の列（.col-prescription）のみをクリック可能にする
             const prescriptionTd = tr.querySelector('.col-prescription');
             if (prescriptionTd) {
                 prescriptionTd.style.cursor = 'pointer';
-
                 prescriptionTd.addEventListener('click', (e) => {
-                    // セル内のボタンそのものをクリックした場合は二重動作を防ぐ
-                    if (e.target.closest('button')) {
-                        return;
-                    }
+                    if (e.target.closest('button')) return;
 
-                    // 1. 長文の「全文確認」ボタンがあれば代理クリック
                     const textMoreBtn = prescriptionTd.querySelector('.btn-text-more');
                     if (textMoreBtn) {
                         textMoreBtn.click();
                         return;
                     }
 
-                    // 2. 複数枚、単枚の画像確認ボタンがあれば代理クリック
                     const imgAllBtn = prescriptionTd.querySelector('.img-link-all');
                     const imgSingleBtn = prescriptionTd.querySelector('.img-link');
                     if (imgAllBtn) {
@@ -348,7 +342,6 @@
                         return;
                     }
 
-                    // 3. 文字数が少なくて確認ボタンがないテキストの場合、直接モーダルを開く
                     if (rawContent && !String(rawContent).startsWith('http')) {
                         openTextModal(rawContent);
                     }
@@ -478,7 +471,6 @@
             noText = `あなたの受付番号は【${repNo}番】です。\n\n`;
         }
 
-        // ─── 【要望】選択中の薬局名と受付番号をあらかじめ差し込んだテンプレート ───
         const dynamicTemplates = {
             'ready': `【${currentShop}】からのお知らせ\n\nお薬のご用意ができました。\n${noText}ご来局の際は、お気をつけてお越しください。`,
             'custom': `【${currentShop}】からのお知らせ\n\n`
@@ -515,7 +507,6 @@
 
         const btn = document.querySelector(`tr[data-rid="${CSS.escape(activeNoticeReceptionId)}"] .btn-notice`);
         if (btn) {
-            // 【要望②】「💬通知済」から「通知済」への変更
             btn.innerText = '通知済';
             btn.className = 'btn btn-notice-done';
             btn.disabled = true;
@@ -537,11 +528,9 @@
     window.addEventListener('click', e => {
         if (e.target === imgModal) closeImgModal();
         if (e.target === document.getElementById('textModal')) closeTextModal();
-        // 【要望】通知モーダルのみ、枠外をクリックしても閉じないように除外（コメントアウト）
-        // if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
     });
 
-    // ─── 【追加機能】AIによる校正・推敲ボタンのクリックイベント ───
+    // AIによる校正・推敲ボタンのクリックイベント
     document.getElementById('aiRefineBtn').addEventListener('click', () => {
         const messageArea = document.getElementById('noticeMessage');
         const aiBtn = document.getElementById('aiRefineBtn');
@@ -554,22 +543,19 @@
             return;
         }
 
-        // チェックボックスの選択状態を取得
         const options = {
             thanks: document.getElementById('aiOptThanks').checked,
             hours: document.getElementById('aiOptHours').checked,
             expiry: document.getElementById('aiOptExpiry').checked
         };
 
-        // ボタンをローディング（処理中）状態に固定
         aiBtn.disabled = true;
         aiBtn.style.opacity = '0.6';
         aiBtn.innerText = '⏳ AIが推敲中...';
 
-        // GAS側の処理を実行
         google.script.run
             .withSuccessHandler((refinedText) => {
-                messageArea.value = refinedText; // AIの結果を上書き反映
+                messageArea.value = refinedText;
                 aiBtn.disabled = false;
                 aiBtn.style.opacity = '1';
                 aiBtn.innerText = '✨ AIによる校正・推敲';
@@ -586,7 +572,6 @@
     // ===== 起動 =====
     fetchData();
     setInterval(fetchData, 10000);
-
 </script>
 </body>
 </html>
