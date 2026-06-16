@@ -66,19 +66,20 @@
         }
 
         /* ===== テーブル ===== */
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); table-layout: fixed; }
+        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
         
+        /* ヘッダーの文字色を完全白色に */
         th { background-color: #4b5563; color: #ffffff !important; font-size: 13px; font-weight: bold; }
         tr.done td { background-color: #f3f4f6; }
 
-        /* 【幅指定の最適化】各列が絶対にズレないよう横幅を厳格に固定 */
-        .col-date { width: 140px; font-size: 13px; color: #1e293b; }
-        .col-patient { width: 230px; }
-        .col-no { width: 115px; }
-        .col-prescription { width: auto; }
-        .col-action { width: 105px; text-align: center; }
-        .col-notice { width: 100px; text-align: center; }
+        /* 【幅指定の最適化】受付番号を患者名に近づける配置バランス */
+        .col-date { width: 125px; font-size: 13px; color: #1e293b; }
+        .col-patient { width: 200px; }
+        .col-no { width: 110px; }
+        .col-prescription { min-width: 250px; }
+        .col-action { width: 95px; text-align: center; }
+        .col-notice { width: 85px; text-align: center; }
 
         /* 受付番号 */
         .no-input {
@@ -91,7 +92,7 @@
         /* 患者名 */
         .patient-name-display { font-weight: bold; color: #1e293b; font-size: 14px; }
         .line-name-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
-        .user-id-sub   { font-size: 10px; color: #94a3b8; word-break: break-all; }
+        .user-id-sub   { font-size: 10px; color: #94a3b8; }
         tr.done .patient-name-display { color: #9ca3af; }
 
         /* インライン編集 */
@@ -110,10 +111,10 @@
         .save-ok { color: #22c55e; font-size: 12px; display: none; font-weight: bold; }
 
         /* 画像ボタン */
-        .img-container { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-        .img-link { background: #B32025; color: white; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 13px; border: none; cursor: pointer; white-space: nowrap; }
+        .img-container { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+        .img-link { background: #B32025; color: white; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; }
         .img-link:hover { background: #991b1b; }
-        .img-link-all { background: #1d4ed8; color: white; padding: 5px 10px; border-radius: 4px; font-weight: bold; font-size: 13px; border: none; cursor: pointer; white-space: nowrap; }
+        .img-link-all { background: #1d4ed8; color: white; padding: 6px 14px; border-radius: 4px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; }
         .img-link-all:hover { background: #1e40af; }
 
         /* 長文テキスト用表示枠 */
@@ -121,14 +122,13 @@
         .btn-text-more { background: #6b7280; color: white; border: none; padding: 4px 10px; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .btn-text-more:hover { background: #4b5563; }
 
-        /* 受付・確認完了ボタン */
-        .btn-check { background: #ef4444; color: white; padding: 7px 0; width: 82px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; text-align: center; flex-shrink: 0; display: inline-block; }
+        /* 受付（旧：対応）ボタン */
+        .btn-check { background: #ef4444; color: white; padding: 7px 12px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-check:hover { background: #dc2626; }
 
-        /* 【修正】通知ボタンのサイズ固定 & 送信済み（グレーアウト）スタイル定義 */
-        .btn-notice { background: #ea580c; color: white; padding: 7px 0; width: 76px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; text-align: center; flex-shrink: 0; display: inline-block; }
+        /* 通知ボタン */
+        .btn-notice { background: #ea580c; color: white; padding: 7px 12px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-notice:hover { background: #c2410c; }
-        .btn-notice:disabled { background: #cbd5e1 !important; color: #94a3b8 !important; cursor: not-allowed; font-weight: normal; }
 
         .reception-id { font-size: 10px; color: #94a3b8; font-family: monospace; margin-top: 2px; }
 
@@ -152,19 +152,12 @@
         .open-external { margin-left: auto; background: rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: flex; align-items: center; }
         .open-external:hover { background: rgba(255,255,255,0.3); }
 
-        /* 長文確認・通知確認ウィンドウ */
-        .text-window { background: white; width: 90%; max-width: 480px; border-radius: 12px; padding: 22px; box-shadow: 0 15px 35px rgba(0,0,0,0.35); display: flex; flex-direction: column; gap: 16px; animation: windowScale 0.2s ease-out; }
-        @keyframes windowScale { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
-        .text-window-title { font-size: 17px; font-weight: bold; color: #1e293b; margin: 0; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
-        .text-window-content { font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.6; max-height: 250px; overflow-y: auto; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
-        
-        /* モーダル用ボタンレイアウト */
-        .modal-btn-wrap { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
-        .btn-modal-cancel { background: #e2e8f0; color: #475569; border: none; border-radius: 6px; padding: 10px 18px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-modal-cancel:hover { background: #cbd5e1; }
-        .btn-modal-ok { background: #ea580c; color: white; border: none; border-radius: 6px; padding: 10px 22px; font-weight: bold; cursor: pointer; font-size: 14px; }
-        .btn-modal-ok:hover { background: #c2410c; }
-        .btn-modal-ok:disabled { background: #cbd5e1; cursor: not-allowed; }
+        /* 長文確認ウィンドウ */
+        .text-window { background: white; width: 90%; max-width: 500px; border-radius: 8px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 16px; }
+        .text-window-title { font-size: 16px; font-weight: bold; color: #333; margin: 0; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; }
+        .text-window-content { font-size: 14px; color: #1e293b; white-space: pre-wrap; line-height: 1.6; max-height: 250px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
+        .text-window-close { background: #4b5563; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: bold; cursor: pointer; text-align: center; }
+        .text-window-close:hover { background: #374151; }
     </style>
 </head>
 <body>
@@ -220,20 +213,7 @@
     <div class="text-window">
         <p class="text-window-title">📝 メッセージ本文の確認</p>
         <div class="text-window-content" id="textModalContent"></div>
-        <div class="modal-btn-wrap">
-            <button class="btn-modal-cancel" style="background:#4b5563; color:white;" id="textModalClose">閉じる</button>
-        </div>
-    </div>
-</div>
-
-<div id="noticeModal" class="modal-mask">
-    <div class="text-window">
-        <p class="text-window-title" id="noticeModalTitle">💬 LINE通知の送信確認</p>
-        <div class="text-window-content" id="noticeModalContent">通知してよろしいですか？<br>OKを押すと患者のLINEへ定型の調剤完了メッセージが送信されます。</div>
-        <div class="modal-btn-wrap" id="noticeModalButtons">
-            <button class="btn-modal-cancel" id="noticeCancelBtn">キャンセル</button>
-            <button class="btn-modal-ok" id="noticeOkBtn">OK</button>
-        </div>
+        <button class="text-window-close" id="textModalClose">閉じる</button>
     </div>
 </div>
 
@@ -342,55 +322,21 @@
         finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
     }
 
-    // ===== 【修正】LINE通知モーダル制御窓の処理 =====
-    function openNoticeModal(receptionId, btnElement) {
-        const modal = document.getElementById('noticeModal');
-        const title = document.getElementById('noticeModalTitle');
-        const content = document.getElementById('noticeModalContent');
-        const btnWrap = document.getElementById('noticeModalButtons');
-        const okBtn = document.getElementById('noticeOkBtn');
-        const cancelBtn = document.getElementById('noticeCancelBtn');
-
-        // モーダルの表示を初期化
-        title.innerHTML = "💬 LINE通知の送信確認";
-        content.innerHTML = "通知してよろしいですか？<br><span style='font-size:12px; color:#64748b;'>※OKを押すと患者のLINEへ定型の調剤完了通知メッセージが送信されます。</span>";
-        btnWrap.style.display = "flex";
-        okBtn.disabled = false;
-        okBtn.textContent = "OK";
-
-        modal.classList.add('open');
-
-        // OKクリック時の非同期処理
-        okBtn.onclick = async () => {
-            okBtn.disabled = true;
-            okBtn.textContent = "送信中...";
-            try {
-                const res = await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true`);
-                const json = await res.json();
-                if (json.status === 'notice_sent') {
-                    // モーダルの中身を「完了画面」に切り替え
-                    title.innerHTML = "🎉 送信完了";
-                    content.innerHTML = "患者のLINEへ通知メッセージを正常に送信しました。";
-                    btnWrap.style.display = "none"; // ボタンエリアを非表示
-                    
-                    // テーブル側のボタンを「送信済」グレー表示に変更
-                    btnElement.disabled = true;
-                    btnElement.textContent = "送信済";
-
-                    // 2秒後に自動でモーダルを閉じる
-                    setTimeout(() => modal.classList.remove('open'), 1800);
-                } else {
-                    alert('通知応答エラーが発生しました。');
-                    modal.classList.remove('open');
-                }
-            } catch (err) {
-                console.error(err);
-                alert('LINE通知送信中にエラーが発生しました。ネットワーク環境をご確認ください。');
-                modal.classList.remove('open');
+    // ===== LINE通知ボタンのイベント =====
+    async function sendLineNotice(receptionId) {
+        if (!confirm('通知してよろしいですか？\nOKを押すと患者のLINEへ定型の調剤完了通知が送信されます。')) return;
+        try {
+            const res = await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true`);
+            const json = await res.json();
+            if (json.status === 'notice_sent') {
+                alert('患者のLINEへ通知を送信しました。');
+            } else {
+                alert('通知の送信が完了しましたが、応答が不規則です。確認してください。');
             }
-        };
-
-        cancelBtn.onclick = () => modal.classList.remove('open');
+        } catch (err) {
+            console.error(err);
+            alert('LINE通知送信中にエラーが発生しました。インターネット接続またはGASのデプロイ設定を確認してください。');
+        }
     }
 
     // ===== 患者名を保存 =====
@@ -481,7 +427,7 @@
                 editWrap.append(pInput, saveBtn, saveOk);
                 tdPatient.append(nameDisp, lineSub, idSub, editWrap);
 
-                // ── 受付番号列 ──
+                // ── 受付番号列（患者名に寄せる配置） ──
                 const tdNo = document.createElement('td');
                 tdNo.className = 'col-no';
                 const noInput = document.createElement('input');
@@ -500,7 +446,7 @@
                 tdNo.appendChild(noInput);
                 tdNo.appendChild(ridLabel);
 
-                // ── 処方箋列 ──
+                // ── 処方箋列（長文テキスト制御付き） ──
                 const tdContent = document.createElement('td');
                 tdContent.className = 'col-prescription';
                 const rawContent = row['テキスト / 画像URL'] || '';
@@ -517,7 +463,7 @@
                     } else {
                         const allBtn = document.createElement('button');
                         allBtn.className = 'img-link-all';
-                        allBtn.textContent = `📋 ${urls.length}枚確認`;
+                        allBtn.textContent = `📋 ${urls.length}枚まとめて確認`;
                         allBtn.onclick = () => openModal(urls, 0);
                         wrap.appendChild(allBtn);
                         urls.forEach((_, i) => {
@@ -530,6 +476,7 @@
                     }
                     tdContent.appendChild(wrap);
                 } else {
+                    // 長文は30文字で丸めてモーダル表示用ボタンを設置
                     if (rawContent.length > 30) {
                         const wrapBox = document.createElement('div');
                         wrapBox.className = 'text-preview-box';
@@ -547,7 +494,7 @@
                     }
                 }
 
-                // ── 受付列 ──
+                // ── 受付（旧：対応）列 ──
                 const tdAction = document.createElement('td');
                 tdAction.className = 'col-action';
                 if (!isDone) {
@@ -561,27 +508,20 @@
                     tdAction.style.color = '#9ca3af';
                 }
 
-                // ── 【修正】通知列（通知ステータスに応じた初期化） ──
+                // ── 通知列 ──
                 const tdNotice = document.createElement('td');
                 tdNotice.className = 'col-notice';
                 const noticeBtn = document.createElement('button');
                 noticeBtn.className = 'btn-notice';
-                
-                // GASの10列目（通知状況）が「通知済」なら最初からグレーアウトにする
-                if (row['通知状況'] === '通知済') {
-                    noticeBtn.disabled = true;
-                    noticeBtn.textContent = '送信済';
-                } else {
-                    noticeBtn.textContent = '💬 通知';
-                }
-                noticeBtn.onclick = () => openNoticeModal(rid, noticeBtn);
+                noticeBtn.textContent = '💬 通知';
+                noticeBtn.onclick = () => sendLineNotice(rid);
                 tdNotice.appendChild(noticeBtn);
 
                 tr.append(tdDate, tdPatient, tdNo, tdContent, tdAction, tdNotice);
                 tbody.appendChild(tr);
 
             } else {
-                // 既存行の差分同期
+                // 既存行の差分更新
                 const actionTd = tr.querySelector('.col-action');
                 if (isDone && actionTd && actionTd.querySelector('.btn-check')) {
                     actionTd.textContent = '確認済';
@@ -591,17 +531,11 @@
                 if (noInput && !noInput.matches(':focus') && row['受付番号'] !== undefined && noInput.value === '') {
                     noInput.value = row['受付番号'] || '';
                 }
-                // 通知ステータスのリアルタイム同期
-                const nBtn = tr.querySelector('.btn-notice');
-                if (nBtn && row['通知状況'] === '通知済' && !nBtn.disabled) {
-                    nBtn.disabled = true;
-                    nBtn.textContent = '送信済';
-                }
             }
             tr.classList.toggle('done', isDone);
         });
 
-        // ソート
+        // ソート順維持
         Array.from(tbody.querySelectorAll('tr'))
             .sort((a, b) => (b.dataset.rid || '').localeCompare(a.dataset.rid || ''))
             .forEach(r => tbody.appendChild(r));
@@ -666,11 +600,9 @@
     document.getElementById('modalClose').addEventListener('click', closeModal);
     document.getElementById('textModalClose').addEventListener('click', closeTextModal);
 
-    // 画面外（背景のマスク）をクリックしたら閉じる
     window.addEventListener('click', e => {
         if (e.target === imgModal) closeModal();
         if (e.target === document.getElementById('textModal')) closeTextModal();
-        if (e.target === document.getElementById('noticeModal')) document.getElementById('noticeModal').classList.remove('open');
     });
 
     // ===== 起動 =====
