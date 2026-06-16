@@ -160,9 +160,14 @@
 </head>
 <body>
 
-<div id="leakAlertBanner" style="display: none; background: #ef4444; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(239,68,68,0.3); animation: dotBlink 1s infinite;">
-    ⚠️ 【通知漏れ警告】LINE受信から30秒以上経過しても、通知が送られていない患者様がいます！ 
-    <span id="leakPatientNames" style="display: block; font-size: 14px; margin-top: 5px; background: rgba(0,0,0,0.15); padding: 5px 10px; border-radius: 4px;"></span>
+<div id="leakAlertBanner" style="display: none; background: #ef4444; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(239,68,68,0.3); position: relative;">
+    <div style="margin-right: 120px;">
+        ⚠️ 【通知漏れ警告】LINE受信から30秒以上経過しても、通知が送られていない患者様がいます！ 
+        <span id="leakPatientNames" style="display: block; font-size: 14px; margin-top: 5px; background: rgba(0,0,0,0.15); padding: 5px 10px; border-radius: 4px;"></span>
+    </div>
+    <button onclick="muteLeakAlertFor5Min()" style="position: absolute; right: 20px; top: 5px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: normal; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
+        🔇 5分間消音
+    </button>
 </div>
 
 <h1>💊 LINE処方箋受付 受信モニター</h1>
@@ -456,6 +461,9 @@
 
         const receptionId = activeNoticeReceptionId;
         closeNoticeModal();
+
+        // ★ここにこの1行を追加します！
+        document.getElementById('leakAlertBanner').style.display = 'none';
 
         localNoticeSentIds.add(receptionId);
         const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
@@ -805,30 +813,48 @@
     fetchData();
     setInterval(fetchData, 10000);
 
-    // ===== 追加：通知漏れがないかをGASに定期的に確認する関数 =====
+    // ===== 追加・修正：通知漏れアラートの制御ロジック =====
+    let leakMuteUntil = 0; // 消音の終了時刻を保持する変数（ミリ秒）
+    
+    // ★追加：5分間消音ボタンが押された時の処理
+    function muteLeakAlertFor5Min() {
+        const now = Date.now();
+        leakMuteUntil = now + (5 * 60 * 1000); // 現在時刻 + 5分（5 * 60秒 * 1000ミリ秒）
+        
+        // 即座にバナーを非表示にする
+        document.getElementById('leakAlertBanner').style.display = 'none';
+        console.log('通知漏れアラートを5分間消音しました。');
+    }
+    
+    // ★修正：定期チェック関数（消音中かどうかの判定を追加）
     function checkNotificationLeak() {
-        // GAS_URL は既存のものを使用
+        // 現在が「消音期間内」であれば、GASへの問い合わせもスキップして非表示を維持
+        if (Date.now() < leakMuteUntil) {
+            document.getElementById('leakAlertBanner').style.display = 'none';
+            return;
+        }
+    
         fetch(`${GAS_URL}?checkLeak=true`)
             .then(response => response.json())
             .then(result => {
+                // GAS通信中に「通知ボタン」が押されたり「消音」された場合を考慮し、再度消音チェック
+                if (Date.now() < leakMuteUntil) return;
+    
                 const banner = document.getElementById('leakAlertBanner');
                 const nameSpan = document.getElementById('leakPatientNames');
                 
                 if (result.status === 'success' && result.leak) {
-                    // 通知漏れがある場合、バナーを表示して対象者名を書く
                     banner.style.display = 'block';
                     nameSpan.innerText = '対象：' + result.patients.join(', ');
                 } else {
-                    // 通知漏れがない場合は非表示にする
                     banner.style.display = 'none';
                 }
             })
             .catch(err => console.error('通知漏れチェックエラー:', err));
     }
     
-    // 5秒ごとにバックグラウンドで通知漏れがないかチェックを走らせる
+    // 5秒ごとにバックグラウンドで通知漏れがないかチェック
     setInterval(checkNotificationLeak, 5000);
-    // 画面を開いた瞬間にも1回実行
     checkNotificationLeak();
 </script>
 </body>
