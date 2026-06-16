@@ -72,7 +72,7 @@
         th { background-color: #4b5563; color: #ffffff !important; font-size: 13px; font-weight: bold; }
         tr.done td { background-color: #f3f4f6; }
 
-        /* 幅指定の固定 */
+        /* 【幅指定の最適化】各列が絶対にズレないよう横幅を厳格に固定 */
         .col-date { width: 140px; font-size: 13px; color: #1e293b; }
         .col-patient { width: 230px; }
         .col-no { width: 115px; }
@@ -86,7 +86,7 @@
             border-radius: 4px; font-size: 14px; text-align: center;
         }
         .no-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
-        tr.done .no-input { background: #f3f4f6; color: #9ca3af; border: none; cursor: default; }
+        tr.done .no-input { background: #f3f4f6; color: #9ca3af; }
 
         /* 患者名 */
         .patient-name-display { font-weight: bold; color: #1e293b; font-size: 14px; }
@@ -125,11 +125,13 @@
         .btn-check { background: #ef4444; color: white; padding: 7px 0; width: 82px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; text-align: center; flex-shrink: 0; display: inline-block; }
         .btn-check:hover { background: #dc2626; }
 
-        /* 通知ボタン */
+        /* 【修正】通知ボタンのサイズ固定 & 送信済み（グレーアウト）スタイル定義 */
         .btn-notice { background: #ea580c; color: white; padding: 7px 0; width: 76px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; text-align: center; flex-shrink: 0; display: inline-block; }
         .btn-notice:hover { background: #c2410c; }
-        .btn-notice.already-sent { background: #cbd5e1 !important; color: #64748b !important; font-weight: normal; }
-        .btn-notice.already-sent:hover { background: #b91c1c !important; color: white !important; font-weight: bold; }
+        .btn-notice:disabled { background: #cbd5e1 !important; color: #94a3b8 !important; cursor: not-allowed; font-weight: normal; }
+        /* 送信済みでも再送できるよう disabled は使わず、見た目だけグレーにするクラス */
+        .btn-notice.sent { background: #cbd5e1; color: #94a3b8; font-weight: normal; }
+        .btn-notice.sent:hover { background: #b9c2cf; }
 
         .reception-id { font-size: 10px; color: #94a3b8; font-family: monospace; margin-top: 2px; }
 
@@ -153,15 +155,24 @@
         .open-external { margin-left: auto; background: rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: flex; align-items: center; }
         .open-external:hover { background: rgba(255,255,255,0.3); }
 
-        /* 確認ウィンドウ */
-        .text-window { background: white; width: 90%; max-width: 480px; border-radius: 12px; padding: 22px; box-shadow: 0 15px 35px rgba(0,0,0,0.35); display: flex; flex-direction: column; gap: 14px; animation: windowScale 0.2s ease-out; }
+        /* 長文確認・通知確認ウィンドウ */
+        .text-window { background: white; width: 90%; max-width: 480px; border-radius: 12px; padding: 22px; box-shadow: 0 15px 35px rgba(0,0,0,0.35); display: flex; flex-direction: column; gap: 16px; animation: windowScale 0.2s ease-out; }
         @keyframes windowScale { from { transform: scale(0.95); opacity: 0; } to { transform: scale(1); opacity: 1; } }
         .text-window-title { font-size: 17px; font-weight: bold; color: #1e293b; margin: 0; border-bottom: 2px solid #f1f5f9; padding-bottom: 10px; }
         .text-window-content { font-size: 14px; color: #334155; white-space: pre-wrap; line-height: 1.6; max-height: 250px; overflow-y: auto; background: #f8fafc; padding: 14px; border-radius: 8px; border: 1px solid #e2e8f0; }
         
-        .notice-textarea { width: 100%; height: 90px; padding: 10px; font-size: 14px; border: 1px solid #cbd5e1; border-radius: 6px; resize: none; font-family: sans-serif; }
-        .notice-textarea:focus { outline: none; border-color: #ea580c; box-shadow: 0 0 0 2px rgba(234,88,12,0.15); }
+        /* 自由記述メッセージ入力欄 */
+        .notice-custom-wrap { display: flex; flex-direction: column; gap: 6px; }
+        .notice-custom-label { font-size: 12px; font-weight: bold; color: #475569; }
+        .notice-custom-textarea {
+            width: 100%; min-height: 90px; resize: vertical; font-size: 14px;
+            padding: 10px; border: 1px solid #cbd5e1; border-radius: 8px;
+            font-family: inherit; line-height: 1.5; color: #1e293b; background: #f8fafc;
+        }
+        .notice-custom-textarea:focus { outline: none; border-color: #6366f1; background: white; }
+        .notice-custom-hint { font-size: 11px; color: #94a3b8; }
 
+        /* モーダル用ボタンレイアウト */
         .modal-btn-wrap { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
         .btn-modal-cancel { background: #e2e8f0; color: #475569; border: none; border-radius: 6px; padding: 10px 18px; font-weight: bold; cursor: pointer; font-size: 14px; }
         .btn-modal-cancel:hover { background: #cbd5e1; }
@@ -232,15 +243,15 @@
 <div id="noticeModal" class="modal-mask">
     <div class="text-window">
         <p class="text-window-title" id="noticeModalTitle">💬 LINE通知の送信確認</p>
-        <div id="noticeModalInstruction" style="font-size:13px; color:#475569;">
-            患者へ個別のメッセージを追加して送信できます。<br>
-            <span style="color:#ea580c; font-weight:bold;">※空欄のまま送信すると、いつもの定型文が送られます。</span>
+        <div class="text-window-content" id="noticeModalContent">通知してよろしいですか？<br>OKを押すと患者のLINEへ定型の調剤完了メッセージが送信されます。</div>
+        <div class="notice-custom-wrap" id="noticeCustomWrap">
+            <label class="notice-custom-label" for="noticeCustomMsg">✏️ 自由記述メッセージ（任意）</label>
+            <textarea id="noticeCustomMsg" class="notice-custom-textarea" placeholder="ここに入力した内容がそのまま患者のLINEに送信されます。空欄の場合は定型の調剤完了メッセージが送信されます。"></textarea>
+            <span class="notice-custom-hint">※未入力なら定型文、入力すればその内容を送信します。</span>
         </div>
-        <textarea class="notice-textarea" id="customMessageInput" placeholder="例: お会計は〇〇円です。保険証をお持ちください。"></textarea>
-        
         <div class="modal-btn-wrap" id="noticeModalButtons">
             <button class="btn-modal-cancel" id="noticeCancelBtn">キャンセル</button>
-            <button class="btn-modal-ok" id="noticeOkBtn">送信する</button>
+            <button class="btn-modal-ok" id="noticeOkBtn">OK</button>
         </div>
     </div>
 </div>
@@ -350,45 +361,53 @@
         finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
     }
 
-    // ===== LINE通知モーダル制御窓の処理 =====
+    // ===== 【修正】LINE通知モーダル制御窓の処理（自由記述・何度でも送信可） =====
     function openNoticeModal(receptionId, btnElement) {
         const modal = document.getElementById('noticeModal');
         const title = document.getElementById('noticeModalTitle');
-        const instruction = document.getElementById('noticeModalInstruction');
-        const txtInput = document.getElementById('customMessageInput');
+        const content = document.getElementById('noticeModalContent');
+        const customWrap = document.getElementById('noticeCustomWrap');
+        const customMsg = document.getElementById('noticeCustomMsg');
         const btnWrap = document.getElementById('noticeModalButtons');
         const okBtn = document.getElementById('noticeOkBtn');
         const cancelBtn = document.getElementById('noticeCancelBtn');
 
+        // モーダルの表示を初期化
         title.innerHTML = "💬 LINE通知の送信確認";
-        instruction.style.display = "block";
-        txtInput.style.display = "block";
-        txtInput.value = ""; 
+        content.innerHTML = "通知してよろしいですか？<br><span style='font-size:12px; color:#64748b;'>※下の自由記述欄に入力すればその内容を、未入力なら定型の調剤完了メッセージを患者のLINEへ送信します。</span>";
+        customWrap.style.display = "flex";
+        customMsg.value = "";
         btnWrap.style.display = "flex";
         okBtn.disabled = false;
-        okBtn.textContent = "送信する";
+        okBtn.textContent = "OK";
 
         modal.classList.add('open');
 
+        // OKクリック時の非同期処理
         okBtn.onclick = async () => {
             okBtn.disabled = true;
             okBtn.textContent = "送信中...";
-            
-            const customMessageValue = txtInput.value;
-
+            const customText = customMsg.value.trim();
             try {
-                const res = await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&customMessage=${encodeURIComponent(customMessageValue)}`);
+                let url = `${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true`;
+                if (customText) {
+                    url += `&customMessage=${encodeURIComponent(customText)}`;
+                }
+                const res = await fetch(url);
                 const json = await res.json();
                 if (json.status === 'notice_sent') {
+                    // モーダルの中身を「完了画面」に切り替え
                     title.innerHTML = "🎉 送信完了";
-                    instruction.innerHTML = "患者のLINEへ通知メッセージを正常に送信しました。";
-                    txtInput.style.display = "none";
-                    btnWrap.style.display = "none"; 
-                    
-                    btnElement.classList.add('already-sent');
+                    content.innerHTML = "患者のLINEへ通知メッセージを正常に送信しました。";
+                    customWrap.style.display = "none"; // 入力欄を非表示
+                    btnWrap.style.display = "none"; // ボタンエリアを非表示
+
+                    // テーブル側のボタンを「送信済」のグレー見た目に変更（押せる状態は維持＝何度でも再送可）
+                    btnElement.classList.add('sent');
                     btnElement.textContent = "送信済";
 
-                    setTimeout(() => modal.classList.remove('open'), 1500);
+                    // 2秒後に自動でモーダルを閉じる
+                    setTimeout(() => modal.classList.remove('open'), 1800);
                 } else {
                     alert('通知応答エラーが発生しました。');
                     modal.classList.remove('open');
@@ -571,14 +590,15 @@
                     tdAction.style.color = '#9ca3af';
                 }
 
-                // ── 通知列 ──
+                // ── 【修正】通知列（通知ステータスに応じた初期化／何度でも再送可能） ──
                 const tdNotice = document.createElement('td');
                 tdNotice.className = 'col-notice';
                 const noticeBtn = document.createElement('button');
                 noticeBtn.className = 'btn-notice';
-                
+
+                // GASの10列目（通知状況）が「通知済」なら見た目だけ「送信済」グレーにする（クリックは可能のまま）
                 if (row['通知状況'] === '通知済') {
-                    noticeBtn.classList.add('already-sent');
+                    noticeBtn.classList.add('sent');
                     noticeBtn.textContent = '送信済';
                 } else {
                     noticeBtn.textContent = '💬 通知';
@@ -600,31 +620,14 @@
                 if (noInput && !noInput.matches(':focus') && row['受付番号'] !== undefined && noInput.value === '') {
                     noInput.value = row['受付番号'] || '';
                 }
+                // 通知ステータスのリアルタイム同期（見た目のみ。クリックは常に可能）
                 const nBtn = tr.querySelector('.btn-notice');
-                if (nBtn && row['通知状況'] === '通知済' && !nBtn.classList.contains('already-sent')) {
-                    nBtn.classList.add('already-sent');
+                if (nBtn && row['通知状況'] === '通知済' && !nBtn.classList.contains('sent')) {
+                    nBtn.classList.add('sent');
                     nBtn.textContent = '送信済';
                 }
             }
-            
-            // 💡【重要修正】確認完了した行(isDone)の時に、不要な表示枠を非表示(display: none)にする制御を追加しました
             tr.classList.toggle('done', isDone);
-            const editWrap = tr.querySelector('.patient-edit-wrap');
-            const userSub  = tr.querySelector('.user-id-sub');
-            const ridLabel = tr.querySelector('.reception-id');
-            if (isDone) {
-                if (editWrap) editWrap.style.display = 'none'; // 名前入力欄と保存ボタン
-                if (userSub)  userSub.style.display  = 'none'; // ユーザーID
-                if (ridLabel) ridLabel.style.display = 'none'; // 受付ID
-                const noInp = tr.querySelector('.no-input');
-                if (noInp) noInp.readOnly = true;              // 受付番号の入力をロック
-            } else {
-                if (editWrap) editWrap.style.display = 'flex';
-                if (userSub)  userSub.style.display  = 'block';
-                if (ridLabel) ridLabel.style.display = 'block';
-                const noInp = tr.querySelector('.no-input');
-                if (noInp) noInp.readOnly = false;
-            }
         });
 
         // ソート
@@ -692,6 +695,7 @@
     document.getElementById('modalClose').addEventListener('click', closeModal);
     document.getElementById('textModalClose').addEventListener('click', closeTextModal);
 
+    // 画面外（背景のマスク）をクリックしたら閉じる
     window.addEventListener('click', e => {
         if (e.target === imgModal) closeModal();
         if (e.target === document.getElementById('textModal')) closeTextModal();
