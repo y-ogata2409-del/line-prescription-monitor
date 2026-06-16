@@ -1,575 +1,105 @@
-<!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <title>薬局LINE受付 管理画面</title>
-    <link rel="icon" type="image/png" href="favicon.png">
-    <link rel="apple-touch-icon" href="favicon.png">
-    <style>
-        * { box-sizing: border-box; }
-        body { font-family: sans-serif; padding: 20px; background: #f0f2f5; margin: 0; }
-        h1 { color: #333; margin-bottom: 5px; font-size: 20px; }
-        .shop-badge { background: #B32025; color: white; padding: 4px 10px; border-radius: 4px; font-size: 16px; display: inline-block; margin-bottom: 16px; }
+function doGet(e) {
+  const ss    = SpreadsheetApp.getActiveSpreadsheet();
+  const sheet = ss.getSheetByName(MAIN_SHEET);
 
-        /* ===== 音声有効化バナー ===== */
-        #audioBanner {
-            background: linear-gradient(135deg, #dc2626, #b91c1c);
-            border-radius: 12px; padding: 20px 24px; margin-bottom: 20px;
-            box-shadow: 0 4px 20px rgba(220,38,38,0.4);
-            display: flex; align-items: center; gap: 20px;
-            animation: bannerPulse 2s infinite ease-in-out;
-        }
-        @keyframes bannerPulse {
-            0%,100% { box-shadow: 0 4px 20px rgba(220,38,38,0.4); }
-            50%      { box-shadow: 0 6px 30px rgba(220,38,38,0.7); }
-        }
-        .banner-icon { font-size: 40px; flex-shrink: 0; }
-        .banner-text { color: white; flex: 1; }
-        .banner-text strong { font-size: 18px; display: block; margin-bottom: 4px; }
-        .banner-text span   { font-size: 13px; opacity: 0.9; }
-        #initBtn {
-            background: white;
-            color: #dc2626; border: none; border-radius: 8px;
-            padding: 14px 24px; font-size: 17px; font-weight: bold; cursor: pointer;
-            white-space: nowrap; flex-shrink: 0;
-            animation: btnBounce 1.5s infinite ease-in-out;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.2);
-        }
-        @keyframes btnBounce {
-            0%,100% { transform: scale(1); }
-            50%      { transform: scale(1.06); }
-        }
-        #initBtn:hover { background: #fef2f2; }
-        #audioBanner.hidden { display: none; }
+  // 1. 【最優先】管理画面からの各種更新（データ保存 or LINE通知）
+  if (e.parameter.update) {
+    const targetId = String(e.parameter.id || '');
+    const rId = e.parameter.id;
 
-        /* ===== ステータスバー ===== */
-        .status-bar {
-            background: #fff;
-            padding: 12px 16px; border-radius: 8px;
-            margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-            display: flex; align-items: center; gap: 12px;
+    // ───パターンA：LINE通知の送信リクエストだった場合───
+    if (e.parameter.notice === 'true') {
+      sendPushNotice(rId); // LINEへの通知関数を実行
+      
+      const out = ContentService.createTextOutput(JSON.stringify({ status: 'notice_sent' }));
+      out.setMimeType(ContentService.MimeType.JSON);
+      return out;
+    }
+    
+    // ───パターンB：患者名または受付番号の保存リクエストだった場合───
+    const data = sheet.getDataRange().getValues();
+    const pName = e.parameter.patientName; 
+    let targetUserId = ''; // データベース紐付け用のユーザーIDを格納する変数
+
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim() === targetId) {
+        // メインシートのC列（3列目・インデックス2）からLINEのユーザーIDを取得
+        targetUserId = String(data[i][2]).trim();
+
+        // 患者名が送られてきている場合はメインシートに保存
+        if (pName !== undefined && pName !== null) {
+          sheet.getRange(i + 1, 5).setValue(String(pName)); // E列(5列目) = 患者名
         }
-        .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
-        .status-dot.alerting { background: #ef4444; animation: dotBlink 0.8s infinite; }
-        @keyframes dotBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
-        .btn-mute-master {
-            background: #ea580c;
-            color: white; border: none; border-radius: 4px;
-            cursor: pointer; font-weight: bold; display: none;
-            padding: 10px 18px; font-size: 15px; margin-left: auto;
+        // 受付番号が送られてきている場合はメインシートに保存
+        if (e.parameter.receptionNo !== undefined) {
+          sheet.getRange(i + 1, 6).setValue(e.parameter.receptionNo); // F列(6列目) = 受付番号
         }
-        .btn-mute-master.visible { display: inline-block; animation: pulseEffect 1.2s infinite ease-in-out; }
-        @keyframes pulseEffect {
-            0%   { transform: scale(1); }
-            50%  { transform: scale(1.08); box-shadow: 0 4px 14px rgba(234,88,12,0.5); }
-            100% { transform: scale(1); }
+        break;
+      }
+    }
+
+    // データベースシート（DB_SHEET）への追記・更新処理（名前が送られてきている場合のみ実行）
+    if (targetUserId && pName !== undefined && pName !== null && pName !== '') {
+      const dbSheet = ss.getSheetByName(DB_SHEET);
+      if (dbSheet) {
+        const dbData = dbSheet.getDataRange().getValues();
+        let isUserExists = false;
+
+        // データベースに同じユーザーIDがあるか確認
+        for (let j = 1; j < dbData.length; j++) {
+          if (String(dbData[j][0]).trim() === targetUserId) {
+            // ユーザーIDが見つかったら、2列目（B列）に患者名を追記・更新
+            dbSheet.getRange(j + 1, 2).setValue(String(pName));
+            isUserExists = true;
+            break;
+          }
         }
 
-        /* ===== テーブル ===== */
-        table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
-        th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
-        
-        /* 【修正】ヘッダーの文字をすべて完全に白色に指定 */
-        th { background-color: #4b5563; color: #ffffff !important; font-size: 13px; font-weight: bold; }
-        tr.done td { background-color: #f9fafb; }
-
-        /* 【修正】各列の幅指定（受付番号が患者名に寄り、処方箋が広く使えるよう最適化） */
-        .col-date { width: 120px; font-size: 13px; color: #1e293b; }
-        .col-patient { width: 240px; }
-        .col-repno { width: 150px; }
-        .col-prescription { min-width: 250px; color: #1e293b; }
-        .col-action { width: 95px; text-align: center; }
-        .col-notice { width: 95px; text-align: center; }
-
-        /* 受付番号入力枠 */
-        .no-input {
-            width: 55px; padding: 5px 4px; border: 1px solid #d1d5db;
-            border-radius: 4px; font-size: 14px; text-align: center;
-            color: #1e293b; background: white;
+        // 万が一、LINE受信時にID登録が漏れていた場合のセーフティ
+        if (!isUserExists) {
+          dbSheet.appendRow([targetUserId, String(pName)]);
         }
-        .no-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
-        tr.done .no-input { background: #f3f4f6; color: #1e293b; }
+      }
+    }
 
-        /* 患者名表示 */
-        .patient-name-display { font-weight: bold; color: #1e293b; font-size: 15px; }
-        .line-name-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
+    const out = ContentService.createTextOutput(JSON.stringify({ status: 'updated' }));
+    out.setMimeType(ContentService.MimeType.JSON);
+    return out;
+  }
 
-        /* インライン編集レイアウト */
-        .inline-edit-wrap { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
-        .patient-input {
-            width: 115px; padding: 5px 6px; border: 1px dashed #cbd5e1;
-            border-radius: 4px; font-size: 13px; color: #1e293b; background: #f8fafc;
-        }
-        .patient-input:focus { outline: none; border-color: #6366f1; background: white; }
-        
-        /* 保存・確認・通知ボタン共通 */
-        .btn-save-inline {
-            background: #10b981;
-            color: white; border: none; border-radius: 4px;
-            padding: 5px 8px; font-size: 12px; cursor: pointer; white-space: nowrap;
-            font-weight: bold; transition: background 0.2s;
-        }
-        .btn-save-inline:hover { background: #059669; }
-        .btn-save-inline.btn-blue { background: #6366f1; }
-        .btn-save-inline.btn-blue:hover { background: #4f46e5; }
-        .save-ok { color: #22c55e; font-size: 12px; display: none; margin-left: 2px; font-weight: bold; }
+  // 2. 受付IDで行を特定してステータスを「確認済」に更新（右端の確認完了ボタン用）
+  if (e.parameter.id) {
+    const targetId = String(e.parameter.id);
+    const data     = sheet.getDataRange().getValues();
+    for (let i = 1; i < data.length; i++) {
+      if (String(data[i][0]).trim() === targetId) {
+        sheet.getRange(i + 1, 8).setValue('確認済'); // H列 = ステータス
+        break;
+      }
+    }
+    const out = ContentService.createTextOutput(JSON.stringify({ status: 'success' }));
+    out.setMimeType(ContentService.MimeType.JSON);
+    return out;
+  }
 
-        /* 画像ボタン */
-        .img-container { display: flex; gap: 6px; flex-wrap: wrap; align-items: center; }
-        .img-link { background: #B32025; color: white; padding: 6px 10px; border-radius: 4px; font-weight: bold; font-size: 13px; border: none; cursor: pointer; }
-        .img-link:hover { background: #991b1b; }
-        .img-link-all { background: #1d4ed8; color: white; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 13px; border: none; cursor: pointer; }
-        .img-link-all:hover { background: #1e40af; }
-
-        /* 長文テキスト表示用ミニボタン */
-        .text-preview-box { display: flex; align-items: center; gap: 6px; font-size: 13px; }
-        .btn-text-more { background: #6b7280; color: white; border: none; padding: 3px 8px; border-radius: 4px; font-size: 11px; cursor: pointer; font-weight: bold; }
-        .btn-text-more:hover { background: #4b5563; }
-
-        /* 受付（確認完了）ボタン */
-        .btn-check { background: #ef4444; color: white; padding: 7px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-check:hover { background: #dc2626; }
-
-        /* 通知ボタン */
-        .btn-notice { background: #ea580c; color: white; padding: 7px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
-        .btn-notice:hover { background: #c2410c; }
-
-        /* ===== モーダル（共通背景） ===== */
-        .modal-mask { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.82); align-items: center; justify-content: center; flex-direction: column; }
-        .modal-mask.open { display: flex; }
-        
-        /* 画像モーダル専用設定 */
-        .modal-header { width: 100%; max-width: 900px; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; color: white; }
-        .modal-counter { font-size: 15px; font-weight: bold; opacity: 0.9; }
-        .modal-close { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 15px; font-weight: bold; }
-        .modal-close:hover { background: rgba(255,255,255,0.3); }
-        .modal-body { width: 100%; max-width: 900px; flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 10px; min-height: 0; }
-        .nav-btn { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 22px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
-        .nav-btn:hover { background: rgba(255,255,255,0.35); }
-        .nav-btn:disabled { opacity: 0.2; cursor: default; }
-        #previewFrame { flex: 1; height: 75vh; border: none; border-radius: 8px; background: white; }
-        .modal-footer { width: 100%; max-width: 900px; display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; align-items: center; }
-        .thumb-dot { width: 36px; height: 8px; border-radius: 4px; border: none; background: rgba(255,255,255,0.3); cursor: pointer; flex-shrink: 0; }
-        .thumb-dot.active { background: white; }
-        .open-external { margin-left: auto; background: rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: flex; align-items: center; }
-        .open-external:hover { background: rgba(255,255,255,0.3); }
-
-        /* 【新設】テキスト確認モーダル専用窓 */
-        .text-window { background: white; width: 90%; max-width: 550px; border-radius: 8px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 16px; }
-        .text-window-title { font-size: 16px; font-weight: bold; color: #333; margin: 0; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; }
-        .text-window-content { font-size: 14px; color: #1e293b; white-space: pre-wrap; line-height: 1.6; max-height: 300px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        .text-window-close { background: #4b5563; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: bold; cursor: pointer; text-align: center; }
-        .text-window-close:hover { background: #374151; }
-    </style>
-</head>
-<body>
-
-<h1>💊 LINE処方箋受付 受信モニター</h1>
-<div id="shopName" class="shop-badge">店舗コード未指定</div>
-
-<div id="audioBanner">
-    <div class="banner-icon">🔔</div>
-    <div class="banner-text">
-        <strong>まず最初にこのボタンを押してください</strong>
-        <span>押さないと新着処方箋が届いても音が鳴りません。朝一番に必ず1回押してください。</span>
-    </div>
-    <button id="initBtn">🔊 音声通知を有効にする</button>
-</div>
-
-<div class="status-bar">
-    <div class="status-dot" id="statusDot"></div>
-    <span id="statusText" style="color:#666;font-weight:bold;">状態: 準備中...</span>
-    <button class="btn-mute-master" id="muteMasterBtn">🔕 とりあえず音を止める</button>
-</div>
-
-<table id="dataTable">
-    <thead>
-        <tr>
-            <th class="col-date">日時</th>
-            <th class="col-patient">患者名 / LINE名</th>
-            <th class="col-repno">受付番号</th>
-            <th class="col-prescription">処方箋</th>
-            <th class="col-action">受付</th>
-            <th class="col-notice">通知</th>
-        </tr>
-    </thead>
-    <tbody></tbody>
-</table>
-
-<div id="imgModal" class="modal-mask">
-    <div class="modal-header">
-        <span class="modal-counter" id="modalCounter"></span>
-        <button class="modal-close" onclick="closeImgModal()">✕ 閉じる</button>
-    </div>
-    <div class="modal-body">
-        <button class="nav-btn" id="prevBtn">‹</button>
-        <iframe id="previewFrame" allowfullscreen></iframe>
-        <button class="nav-btn" id="nextBtn">›</button>
-    </div>
-    <div class="modal-footer" id="modalFooter">
-        <a id="openExternal" class="open-external" href="#" target="_blank">↗ Driveで直接開く</a>
-    </div>
-</div>
-
-<div id="textModal" class="modal-mask">
-    <div class="text-window">
-        <p class="text-window-title">📝 メッセージ本文の確認</p>
-        <div class="text-window-content" id="textModalContent"></div>
-        <button class="text-window-close" onclick="closeTextModal()">閉じる</button>
-    </div>
-</div>
-
-<audio id="noticeSound" src="notification.mp3" preload="auto" loop></audio>
-
-<script>
-    const GAS_URL = 'https://script.google.com/macros/s/AKfycbx0FTHjd8eDUkbavljJcaGNW0p29oHH490jY6IlN7eMPLPJ3oWpE2fsvFvFibr2SyAL/exec';
-    const SHOP_MASTER = { '1': '友愛医療センター店', '2': '豊見城中央病院前店', '3': '豊見城薬局' };
-    const urlParams = new URLSearchParams(window.location.search);
-    const targetShopName = SHOP_MASTER[urlParams.get('p')] || '';
-    document.getElementById('shopName').innerText = targetShopName || '⚠️ 全店舗のデータを表示中';
-
-    // ===== 状態管理 =====
-    let isAudioEnabled = false;
-    let volumeInterval = null, countdownInterval = null;
-    let isAlerting = false, muteUntilTime = 0;
-    let globalHasUnread = false, isFetching = false;
-    let pendingCheckIds = new Set();
-    const MUTE_DURATION = 60000;
-
-    const sound       = document.getElementById('noticeSound');
-    const audioBanner = document.getElementById('audioBanner');
-    const statusText  = document.getElementById('statusText');
-    const statusDot   = document.getElementById('statusDot');
-    const muteMasterBtn = document.getElementById('muteMasterBtn');
-
-    document.getElementById('initBtn').addEventListener('click', () => {
-        sound.play().then(() => {
-            sound.pause(); sound.currentTime = 0;
-            isAudioEnabled = true;
-            audioBanner.classList.add('hidden');
-            statusText.innerText = '状態: 定期監視中...';
-            statusText.style.color = '#22c55e';
-            fetchData();
-        }).catch(err => {
-            console.error(err);
-            alert('音声の有効化に失敗しました。ページを再読み込みしてもう一度お試しください。');
-        });
+  // 3. 全データ取得（管理画面の定期ポーリング用）
+  const data    = sheet.getDataRange().getValues();
+  const headers = data[0];
+  const rows    = [];
+  for (let i = 1; i < data.length; i++) {
+    const row     = data[i];
+    const rowData = {};
+    headers.forEach((header, index) => {
+      if (row[index] instanceof Date) {
+        rowData[header] = Utilities.formatDate(row[index], 'JST', 'yyyy-MM-dd HH:mm:ss');
+      } else {
+        rowData[header] = row[index];
+      }
     });
+    rows.push(rowData);
+  }
 
-    muteMasterBtn.addEventListener('click', triggerMute);
-
-    // ===== アラート制御 =====
-    function startAlert() {
-        if (isAlerting || !isAudioEnabled || Date.now() < muteUntilTime) return;
-        isAlerting = true;
-        clearInterval(volumeInterval);
-        sound.volume = 0.1;
-        sound.play().catch(e => console.log(e));
-        statusText.innerText = '🚨 未確認の処方箋があります！';
-        statusText.style.color = '#ef4444';
-        statusDot.classList.add('alerting');
-        muteMasterBtn.classList.add('visible');
-
-        volumeInterval = setInterval(() => {
-            if (sound.volume < 0.9) sound.volume = Math.min(1.0, sound.volume + 0.2);
-            else clearInterval(volumeInterval);
-        }, 5000);
-    }
-    function stopAlert() {
-        if (!isAlerting) return;
-        isAlerting = false;
-        sound.pause(); sound.currentTime = 0;
-        clearInterval(volumeInterval);
-        statusDot.classList.remove('alerting');
-        muteMasterBtn.classList.remove('visible');
-    }
-    function triggerMute() {
-        stopAlert();
-        muteUntilTime = Date.now() + MUTE_DURATION;
-        updateCountdownText(); startCountdownDisplay();
-    }
-    function updateCountdownText() {
-        if (!globalHasUnread) return;
-        const s = Math.ceil((muteUntilTime - Date.now()) / 1000);
-        if (s > 0) { statusText.innerText = `⏳ 一時消音中（残り約${s}秒）未確認あり`; statusText.style.color = '#ea580c'; }
-    }
-    function startCountdownDisplay() {
-        clearInterval(countdownInterval);
-        countdownInterval = setInterval(() => {
-            if (!globalHasUnread) { clearAllMuteState(); return; }
-            const s = Math.ceil((muteUntilTime - Date.now()) / 1000);
-            if (s > 0) updateCountdownText();
-            else { clearInterval(countdownInterval); if (globalHasUnread) { isAlerting = false; startAlert(); } }
-        }, 1000);
-    }
-    function clearAllMuteState() {
-        clearInterval(countdownInterval); muteUntilTime = 0; stopAlert();
-        if (isAudioEnabled) { statusText.innerText = '状態: 定期監視中...'; statusText.style.color = '#22c55e'; }
-    }
-
-    // ===== 受付（確認完了）ボタン =====
-    async function checkRow(receptionId, btnElement) {
-        if (pendingCheckIds.has(receptionId)) return;
-        pendingCheckIds.add(receptionId);
-        btnElement.disabled = true; btnElement.innerText = '処理中...';
-        const targetRow = btnElement.closest('tr');
-        if (targetRow) { targetRow.classList.add('done'); btnElement.parentElement.innerText = '確認済'; }
-
-        const remaining = document.querySelectorAll('#dataTable .btn-check:not(:disabled)');
-        if (remaining.length === 0) { globalHasUnread = false; clearAllMuteState(); }
-        else { stopAlert(); muteUntilTime = Date.now() + MUTE_DURATION; updateCountdownText(); startCountdownDisplay(); }
-
-        try { 
-            await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`);
-        }
-        catch (err) { console.error(err); }
-        finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
-    }
-
-    // ===== 【新設】LINE通知送信機能（非同期） =====
-    function sendLineNotice(receptionId) {
-        if (!confirm('該当の患者へ調剤完了等の定型LINE通知を送信しますか？')) return;
-
-        // 即座に通知中であることを画面で一瞬見せる（またはそのままバックグラウンド処理）
-        alert('LINE通知の送信リクエストを受け付けました。');
-
-        // 非同期でGASへnoticeパラメータを投げる
-        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true`)
-            .catch(err => {
-                console.error(err);
-                alert('LINE通知送信中にエラーが発生しました。インターネット接続を確認してください。');
-            });
-    }
-
-    // ===== 患者名のみを非同期で保存 =====
-    function savePatientNameOnly(receptionId) {
-        const inputEl = document.getElementById(`pinput-${receptionId}`);
-        const okEl = document.getElementById(`pok-${receptionId}`);
-        if (!inputEl) return;
-        
-        const patientName = inputEl.value;
-        okEl.style.display = 'inline';
-        setTimeout(() => { okEl.style.display = 'none'; }, 2000);
-
-        const nameDisp = inputEl.closest('td').querySelector('.patient-name-display');
-        if (nameDisp) {
-            nameDisp.textContent = patientName ? `${patientName} 様` : '（未登録）';
-        }
-
-        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`)
-            .catch(err => {
-                console.error(err);
-                alert('患者名の保存で通信エラーが発生しました。再読込してください。');
-            });
-    }
-
-    // ===== 受付番号のみを非同期で保存 =====
-    function saveReceptionNoOnly(receptionId) {
-        const inputEl = document.getElementById(`noinput-${receptionId}`);
-        const okEl = document.getElementById(`nook-${receptionId}`);
-        if (!inputEl) return;
-
-        const value = inputEl.value;
-        okEl.style.display = 'inline';
-        setTimeout(() => { okEl.style.display = 'none'; }, 2000);
-
-        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&receptionNo=${encodeURIComponent(value)}`)
-            .catch(err => {
-                console.error(err);
-                alert('受付番号の保存で通信エラーが発生しました。再読込してください。');
-            });
-    }
-
-    // ===== データ取得 =====
-    async function fetchData() {
-        if (isFetching) return;
-        isFetching = true;
-        try {
-            const res = await fetch(GAS_URL + '?t=' + Date.now());
-            const rawData = await res.json();
-            let myData = targetShopName ? rawData.filter(r => r['受付店舗'] === targetShopName) : rawData;
-            globalHasUnread = myData.some(r => r['ステータス'] === '未確認' && !pendingCheckIds.has(r['受付ID']));
-            updateTable(myData);
-
-            if (globalHasUnread) { if (Date.now() >= muteUntilTime) startAlert(); }
-            else clearAllMuteState();
-        } catch (err) { console.error(err); }
-        finally { isFetching = false; }
-    }
-
-    // ===== テーブル描画 =====
-    function updateTable(data) {
-        const tbody = document.querySelector('#dataTable tbody');
-        const sorted = [...data].reverse();
-
-        sorted.forEach(row => {
-            const rid    = row['受付ID'] || '';
-            const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
-            let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
-
-            const rawPatientName = row['患者名'] ? String(row['患者名']).trim() : '';
-            const displayPatientName = rawPatientName ? `${rawPatientName} 様` : '（未登録）';
-
-            // ── 処方箋（画像ボタンまたは長文テキスト用切り替え表示） ──
-            let prescriptionHtml = '';
-            const rawContent = row['テキスト / 画像URL'] || '';
-            if (rawContent.startsWith('http')) {
-                const urls = rawContent.split(',').map(u => u.trim()).filter(Boolean);
-                if (urls.length === 1) {
-                    prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(['${urls[0]}'], 0)">📸 処方箋を確認</button></div>`;
-                } else {
-                    let btnSub = '';
-                    urls.forEach((u, i) => { btnSub += `<button class="img-link" onclick="openModal(${JSON.stringify(urls)}, ${i})">[${i + 1}]</button>`; });
-                    prescriptionHtml = `
-                        <div class="img-container">
-                            <button class="img-link-all" onclick="openModal(${JSON.stringify(urls)}, 0)">📋 ${urls.length}枚まとめて確認</button>
-                            ${btnSub}
-                        </div>`;
-                }
-            } else {
-                // 【修正】テキスト長文対策: 30文字を超えたら省略し、全文モーダルボタンを配置
-                if (rawContent.length > 30) {
-                    const shortText = rawContent.substring(0, 30) + '...';
-                    prescriptionHtml = `
-                        <div class="text-preview-box">
-                            <span>${shortText}</span>
-                            <button class="btn-text-more" onclick="openTextModal(${JSON.stringify(rawContent)})">全文確認</button>
-                        </div>`;
-                } else {
-                    prescriptionHtml = `<span style="font-size:13px;">${rawContent}</span>`;
-                }
-            }
-
-            // 受付（確認完了）列のHTML
-            const actionHtml = isDone 
-                ? `<span style="color:#9ca3af; font-weight:bold;">確認済</span>` 
-                : `<button class="btn-check" onclick="checkRow('${rid}', this)">✔ 確認完了</button>`;
-
-            // 【新設】通知列のHTML
-            const noticeHtml = `<button class="btn-notice" onclick="sendLineNotice('${rid}')">💬 通知</button>`;
-
-            // 行全体のHTML構造
-            const rowInnerHTML = `
-                <td class="col-date">${row['日時'] || ''}</td>
-                <td class="col-patient">
-                    <div class="patient-name-display">${displayPatientName}</div>
-                    <div class="line-name-sub">LINE: ${row['LINE名'] || ''}</div>
-                    <div class="inline-edit-wrap">
-                        <input type="text" id="pinput-${rid}" class="patient-input" value="${rawPatientName}" placeholder="患者名を入力...">
-                        <button class="btn-save-inline btn-blue" onclick="savePatientNameOnly('${rid}')">名前保存</button>
-                        <span id="pok-${rid}" class="save-ok">✓</span>
-                    </div>
-                </td>
-                <td class="col-repno">
-                    <div class="inline-edit-wrap">
-                        <input type="text" id="noinput-${rid}" class="no-input" value="${row['受付番号'] || ''}" placeholder="—">
-                        <button class="btn-save-inline" onclick="saveReceptionNoOnly('${rid}')">番号保存</button>
-                        <span id="nook-${rid}" class="save-ok">✓</span>
-                    </div>
-                </td>
-                <td class="col-prescription">${prescriptionHtml}</td>
-                <td class="col-action">${actionHtml}</td>
-                <td class="col-notice">${noticeHtml}</td>
-            `;
-
-            if (!tr) {
-                tr = document.createElement('tr');
-                tr.setAttribute('data-rid', rid);
-                tr.innerHTML = rowInnerHTML;
-                tbody.appendChild(tr);
-            } else {
-                const pInput = tr.querySelector(`#pinput-${rid}`);
-                const noInput = tr.querySelector(`#noinput-${rid}`);
-                
-                tr.querySelector('.col-prescription').innerHTML = prescriptionHtml;
-                tr.querySelector('.col-action').innerHTML = actionHtml;
-                tr.querySelector('.col-notice').innerHTML = noticeHtml;
-
-                if (pInput && !pInput.matches(':focus')) {
-                    pInput.value = rawPatientName;
-                    tr.querySelector('.patient-name-display').textContent = displayPatientName;
-                }
-                if (noInput && !noInput.matches(':focus')) {
-                    if (row['受付番号'] !== undefined) {
-                        noInput.value = row['受付番号'] || '';
-                    }
-                }
-            }
-            tr.classList.toggle('done', isDone);
-        });
-
-        // 配列ソート
-        Array.from(tbody.querySelectorAll('tr'))
-            .sort((a, b) => (b.dataset.rid || '').localeCompare(a.dataset.rid || ''))
-            .forEach(r => tbody.appendChild(r));
-    }
-
-    // ===== テキスト専用モーダル制御 =====
-    function openTextModal(text) {
-        document.getElementById('textModalContent').textContent = text;
-        document.getElementById('textModal').classList.add('open');
-    }
-    function closeTextModal() {
-        document.getElementById('textModal').classList.remove('open');
-    }
-
-    // ===== 画像モーダル制御 =====
-    let modalUrls = [], modalIndex = 0;
-    const imgModal     = document.getElementById('imgModal');
-    const previewFrame = document.getElementById('previewFrame');
-    const prevBtn      = document.getElementById('prevBtn');
-    const nextBtn      = document.getElementById('nextBtn');
-    const modalCounter = document.getElementById('modalCounter');
-    const modalFooter  = document.getElementById('modalFooter');
-    const openExternal = document.getElementById('openExternal');
-
-    function toPreviewUrl(url) {
-        const m = url.match(/\/file\/d\/([^\/]+)/);
-        return m ? `https://drive.google.com/file/d/${m[1]}/preview` : url;
-    }
-    function openModal(urls, startIndex = 0) {
-        modalUrls = urls;
-        modalIndex = startIndex;
-        imgModal.classList.add('open');
-        renderModal();
-        document.addEventListener('keydown', onModalKey);
-    }
-    function closeImgModal() {
-        imgModal.classList.remove('open');
-        previewFrame.src = 'about:blank';
-        document.removeEventListener('keydown', onModalKey);
-    }
-    function renderModal() {
-        previewFrame.src = toPreviewUrl(modalUrls[modalIndex]);
-        openExternal.href = modalUrls[modalIndex];
-        modalCounter.textContent = `${modalIndex + 1} / ${modalUrls.length} 枚`;
-        prevBtn.disabled = (modalIndex === 0);
-        nextBtn.disabled = (modalIndex === modalUrls.length - 1);
-        modalFooter.querySelectorAll('.thumb-dot').forEach(d => d.remove());
-        modalUrls.forEach((_, i) => {
-            const dot = document.createElement('button');
-            dot.className = 'thumb-dot' + (i === modalIndex ? ' active' : '');
-            dot.onclick = () => { modalIndex = i; renderModal(); };
-            modalFooter.insertBefore(dot, openExternal);
-        });
-    }
-    function onModalKey(e) {
-        if (e.key === 'ArrowRight' || e.key === 'ArrowDown') { if (modalIndex < modalUrls.length - 1) { modalIndex++; renderModal(); } }
-        else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { if (modalIndex > 0) { modalIndex--; renderModal(); } }
-        else if (e.key === 'Escape') closeImgModal();
-    }
-    prevBtn.addEventListener('click', () => { if (modalIndex > 0) { modalIndex--; renderModal(); } });
-    nextBtn.addEventListener('click', () => { if (modalIndex < modalUrls.length - 1) { modalIndex++; renderModal(); } });
-
-    // 画面外クリックで閉じる処理
-    window.addEventListener('click', e => {
-        if (e.target === imgModal) closeImgModal();
-        if (e.target === document.getElementById('textModal')) closeTextModal();
-    });
-
-    // ===== 起動 =====
-    fetchData();
-    setInterval(fetchData, 10000);
-</script>
-</body>
-</html>
+  const out = ContentService.createTextOutput(JSON.stringify(rows));
+  out.setMimeType(ContentService.MimeType.JSON);
+  return out;
+}
