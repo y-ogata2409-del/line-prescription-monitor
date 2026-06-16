@@ -335,11 +335,20 @@
 
         // 非同期でGASへnoticeパラメータを投げる
         fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true`)
-            .catch(err => {
-                console.error(err);
-                alert('LINE通知送信中にエラーが発生しました。インターネット接続を確認してください。');
-            });
-    }
+          .then(res => {
+              if (!res.ok) {
+                  throw new Error('Server Error');
+              }
+              return res.json();
+          })
+          .then(() => {
+              alert('LINE通知を送信しました');
+          })
+          .catch(err => {
+              console.error(err);
+              alert('LINE通知の送信に失敗しました');
+          });
+       }
 
     // ===== 患者名のみを非同期で保存 =====
     function savePatientNameOnly(receptionId) {
@@ -433,7 +442,16 @@
                     prescriptionHtml = `
                         <div class="text-preview-box">
                             <span>${shortText}</span>
-                            <button class="btn-text-more" onclick="openTextModal(${JSON.stringify(rawContent)})">全文確認</button>
+                            const encodedText = encodeURIComponent(rawContent);
+
+prescriptionHtml = `
+<div class="text-preview-box">
+    <span>${shortText}</span>
+    <button class="btn-text-more"
+        onclick="openTextModal(decodeURIComponent('${encodedText}'))">
+        全文確認
+    </button>
+</div>`;
                         </div>`;
                 } else {
                     prescriptionHtml = `<span style="font-size:13px;">${rawContent}</span>`;
