@@ -630,7 +630,7 @@
             // 受付（確認完了）列のHTML（「✅確認済」に修正）
             const actionHtml = isDone 
                 ? `<span style="color:#22c55e; font-weight:bold;">✅確認済</span>` 
-                : `<button class="btn-check" onclick="checkRow('${rid}', this)">✔ 確認完了</button>`;
+                : `<button class="btn-check" onclick="checkRow('${rid}', this)">確認完了</button>`;
 
             // ★修正ポイント：スプレッドシートの見出し「通知」に対応
             const isNoticeSent = (row['通知'] === '通知済' || localNoticeSentIds.has(rid));
