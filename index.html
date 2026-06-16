@@ -28,7 +28,8 @@
         .banner-text strong { font-size: 18px; display: block; margin-bottom: 4px; }
         .banner-text span   { font-size: 13px; opacity: 0.9; }
         #initBtn {
-            background: white; color: #dc2626; border: none; border-radius: 8px;
+            background: white;
+            color: #dc2626; border: none; border-radius: 8px;
             padding: 14px 24px; font-size: 17px; font-weight: bold; cursor: pointer;
             white-space: nowrap; flex-shrink: 0;
             animation: btnBounce 1.5s infinite ease-in-out;
@@ -43,7 +44,8 @@
 
         /* ===== ステータスバー ===== */
         .status-bar {
-            background: #fff; padding: 12px 16px; border-radius: 8px;
+            background: #fff;
+            padding: 12px 16px; border-radius: 8px;
             margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex; align-items: center; gap: 12px;
         }
@@ -51,7 +53,8 @@
         .status-dot.alerting { background: #ef4444; animation: dotBlink 0.8s infinite; }
         @keyframes dotBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
         .btn-mute-master {
-            background: #ea580c; color: white; border: none; border-radius: 4px;
+            background: #ea580c;
+            color: white; border: none; border-radius: 4px;
             cursor: pointer; font-weight: bold; display: none;
             padding: 10px 18px; font-size: 15px; margin-left: auto;
         }
@@ -68,107 +71,79 @@
         th { background-color: #4b5563; color: white; font-size: 13px; }
         tr.done td { background-color: #f3f4f6; }
 
+        /* No.列（登録ボタン列） */
+        td.col-no { width: 90px; text-align: center; }
+        .btn-register-row {
+            background-color: #3b82f6;
+            color: white; border: none; padding: 6px 12px;
+            border-radius: 4px; font-size: 13px; font-weight: bold;
+            cursor: pointer; transition: background 0.2s;
+        }
+        .btn-register-row:hover { background-color: #2563eb; }
+        tr.done .btn-register-row { background-color: #9ca3af; cursor: not-allowed; opacity: 0.6; }
+
         /* 受付番号列 */
-        td.col-no { width: 80px; }
+        td.col-repno { width: 160px; }
         .no-input {
-            width: 64px; padding: 5px 6px; border: 1px solid #d1d5db;
+            width: 60px; padding: 5px 6px; border: 1px solid #d1d5db;
             border-radius: 4px; font-size: 14px; text-align: center;
         }
         .no-input:focus { outline: none; border-color: #6366f1; box-shadow: 0 0 0 2px rgba(99,102,241,0.2); }
         tr.done .no-input { background: #f3f4f6; color: #9ca3af; }
 
         /* 患者名列 */
-        td.col-patient { min-width: 130px; }
-        .patient-name-display { font-weight: bold; color: #1e293b; font-size: 14px; }
+        td.col-patient { min-width: 260px; }
+        .patient-name-display { font-weight: bold; color: #1e293b; font-size: 15px; }
         .line-name-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
-        .user-id-sub   { font-size: 10px; color: #94a3b8; }
         tr.done .patient-name-display { color: #9ca3af; }
 
-        /* 患者名インライン編集 */
-        .patient-edit-wrap { display: flex; align-items: center; gap: 4px; margin-top: 4px; }
+        /* インライン編集共通 */
+        .inline-edit-wrap { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
         .patient-input {
-            flex: 1; padding: 4px 6px; border: 1px dashed #cbd5e1;
-            border-radius: 4px; font-size: 13px; color: #1e293b; min-width: 0;
-            background: #f8fafc;
+            width: 140px; padding: 5px 6px; border: 1px dashed #cbd5e1;
+            border-radius: 4px; font-size: 13px; color: #1e293b; background: #f8fafc;
         }
         .patient-input:focus { outline: none; border-color: #6366f1; background: white; }
-        .btn-save-patient {
-            background: #6366f1; color: white; border: none; border-radius: 4px;
-            padding: 4px 8px; font-size: 12px; cursor: pointer; white-space: nowrap;
+        
+        /* インラインボタン共通 */
+        .btn-save-inline {
+            background: #10b981;
+            color: white; border: none; border-radius: 4px;
+            padding: 5px 10px; font-size: 12px; cursor: pointer; white-space: nowrap;
+            font-weight: bold; transition: background 0.2s;
         }
-        .btn-save-patient:hover { background: #4f46e5; }
-        .save-ok { color: #22c55e; font-size: 12px; display: none; }
+        .btn-save-inline:hover { background: #059669; }
+        .btn-save-inline.btn-blue { background: #6366f1; }
+        .btn-save-inline.btn-blue:hover { background: #4f46e5; }
+        .save-ok { color: #22c55e; font-size: 12px; display: none; margin-left: 2px; }
 
         /* 画像ボタン */
         .img-container { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
-        .img-link {
-            background: #B32025; color: white; padding: 6px 12px; border-radius: 4px;
-            font-weight: bold; font-size: 14px; border: none; cursor: pointer;
-        }
+        .img-link { background: #B32025; color: white; padding: 6px 12px; border-radius: 4px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; }
         .img-link:hover { background: #991b1b; }
-        .img-link-all {
-            background: #1d4ed8; color: white; padding: 6px 14px; border-radius: 4px;
-            font-weight: bold; font-size: 14px; border: none; cursor: pointer;
-        }
+        .img-link-all { background: #1d4ed8; color: white; padding: 6px 14px; border-radius: 4px; font-weight: bold; font-size: 14px; border: none; cursor: pointer; }
         .img-link-all:hover { background: #1e40af; }
 
-        /* 確認ボタン */
-        .btn-check {
-            background: #ef4444; color: white; padding: 7px 14px; font-size: 14px;
-            border-radius: 4px; border: none; cursor: pointer; font-weight: bold;
-        }
+        /* 確認完了ボタン */
+        .btn-check { background: #ef4444; color: white; padding: 7px 14px; font-size: 14px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-check:hover { background: #dc2626; }
 
-        /* 受付ID表示 */
-        .reception-id { font-size: 10px; color: #94a3b8; font-family: monospace; }
-
         /* ===== 画像モーダル ===== */
-        #imgModal {
-            display: none; position: fixed; inset: 0; z-index: 1000;
-            background: rgba(0,0,0,0.82);
-            align-items: center; justify-content: center; flex-direction: column;
-        }
+        #imgModal { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.82); align-items: center; justify-content: center; flex-direction: column; }
         #imgModal.open { display: flex; }
-        .modal-header {
-            width: 100%; max-width: 900px;
-            display: flex; align-items: center; justify-content: space-between;
-            padding: 10px 14px; color: white;
-        }
+        .modal-header { width: 100%; max-width: 900px; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; color: white; }
         .modal-counter { font-size: 15px; font-weight: bold; opacity: 0.9; }
-        .modal-close {
-            background: rgba(255,255,255,0.15); color: white; border: none;
-            border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 15px; font-weight: bold;
-        }
+        .modal-close { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 15px; font-weight: bold; }
         .modal-close:hover { background: rgba(255,255,255,0.3); }
-        .modal-body {
-            width: 100%; max-width: 900px; flex: 1;
-            display: flex; align-items: center; gap: 10px;
-            padding: 0 10px; min-height: 0;
-        }
-        .nav-btn {
-            background: rgba(255,255,255,0.15); color: white; border: none;
-            border-radius: 50%; width: 50px; height: 50px; font-size: 22px;
-            cursor: pointer; flex-shrink: 0;
-            display: flex; align-items: center; justify-content: center;
-        }
+        .modal-body { width: 100%; max-width: 900px; flex: 1; display: flex; align-items: center; gap: 10px; padding: 0 10px; min-height: 0; }
+        .nav-btn { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 50%; width: 50px; height: 50px; font-size: 22px; cursor: pointer; flex-shrink: 0; display: flex; align-items: center; justify-content: center; }
         .nav-btn:hover { background: rgba(255,255,255,0.35); }
         .nav-btn:disabled { opacity: 0.2; cursor: default; }
         #previewFrame { flex: 1; height: 75vh; border: none; border-radius: 8px; background: white; }
-        .modal-footer {
-            width: 100%; max-width: 900px;
-            display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; align-items: center;
-        }
-        .thumb-dot {
-            width: 36px; height: 8px; border-radius: 4px; border: none;
-            background: rgba(255,255,255,0.3); cursor: pointer; flex-shrink: 0;
-        }
+        .modal-footer { width: 100%; max-width: 900px; display: flex; gap: 8px; padding: 10px 14px; overflow-x: auto; align-items: center; }
+        .thumb-dot { width: 36px; height: 8px; border-radius: 4px; border: none; background: rgba(255,255,255,0.3); cursor: pointer; flex-shrink: 0; }
         .thumb-dot.active { background: white; }
-        .open-external {
-            margin-left: auto; background: rgba(255,255,255,0.15); color: white;
-            padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer;
-            font-size: 13px; white-space: nowrap; text-decoration: none;
-            display: flex; align-items: center;
-        }
+        .open-external { margin-left: auto; background: rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: flex; align-items: center; }
         .open-external:hover { background: rgba(255,255,255,0.3); }
     </style>
 </head>
@@ -177,7 +152,6 @@
 <h1>💊 LINE処方箋受付 受信モニター</h1>
 <div id="shopName" class="shop-badge">店舗コード未指定</div>
 
-<!-- 音声有効化バナー -->
 <div id="audioBanner">
     <div class="banner-icon">🔔</div>
     <div class="banner-text">
@@ -187,20 +161,19 @@
     <button id="initBtn">🔊 音声通知を有効にする</button>
 </div>
 
-<!-- ステータスバー -->
 <div class="status-bar">
     <div class="status-dot" id="statusDot"></div>
     <span id="statusText" style="color:#666;font-weight:bold;">状態: 準備中...</span>
     <button class="btn-mute-master" id="muteMasterBtn">🔕 とりあえず音を止める</button>
 </div>
 
-<!-- メインテーブル -->
 <table id="dataTable">
     <thead>
         <tr>
-            <th style="width:48px">No.</th>
+            <th style="width:90px; text-align:center;">No.</th>
             <th style="width:130px">日時</th>
             <th>患者名 / LINE名</th>
+            <th style="width:160px">受付番号</th>
             <th style="width:200px">処方箋</th>
             <th style="width:90px">対応</th>
         </tr>
@@ -208,7 +181,6 @@
     <tbody></tbody>
 </table>
 
-<!-- 画像ビューアーモーダル -->
 <div id="imgModal">
     <div class="modal-header">
         <span class="modal-counter" id="modalCounter"></span>
@@ -229,7 +201,6 @@
 <script>
     // ▼ GASのウェブアプリURL
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbx0FTHjd8eDUkbavljJcaGNW0p29oHH490jY6IlN7eMPLPJ3oWpE2fsvFvFibr2SyAL/exec';
-
     const SHOP_MASTER = { '1': '友愛医療センター店', '2': '豊見城中央病院前店', '3': '豊見城薬局' };
     const urlParams = new URLSearchParams(window.location.search);
     const targetShopName = SHOP_MASTER[urlParams.get('p')] || '';
@@ -240,7 +211,7 @@
     let volumeInterval = null, countdownInterval = null;
     let isAlerting = false, muteUntilTime = 0;
     let globalHasUnread = false, isFetching = false;
-    let pendingCheckIds = new Set(); // 受付IDのSet（文字列）
+    let pendingCheckIds = new Set();
     const MUTE_DURATION = 60000;
 
     const sound       = document.getElementById('noticeSound');
@@ -262,6 +233,7 @@
             alert('音声の有効化に失敗しました。ページを再読み込みしてもう一度お試しください。');
         });
     });
+
     muteMasterBtn.addEventListener('click', triggerMute);
 
     // ===== アラート制御 =====
@@ -275,6 +247,7 @@
         statusText.style.color = '#ef4444';
         statusDot.classList.add('alerting');
         muteMasterBtn.classList.add('visible');
+
         volumeInterval = setInterval(() => {
             if (sound.volume < 0.9) sound.volume = Math.min(1.0, sound.volume + 0.2);
             else clearInterval(volumeInterval);
@@ -289,7 +262,8 @@
         muteMasterBtn.classList.remove('visible');
     }
     function triggerMute() {
-        stopAlert(); muteUntilTime = Date.now() + MUTE_DURATION;
+        stopAlert();
+        muteUntilTime = Date.now() + MUTE_DURATION;
         updateCountdownText(); startCountdownDisplay();
     }
     function updateCountdownText() {
@@ -323,25 +297,60 @@
         if (remaining.length === 0) { globalHasUnread = false; clearAllMuteState(); }
         else { stopAlert(); muteUntilTime = Date.now() + MUTE_DURATION; updateCountdownText(); startCountdownDisplay(); }
 
-        try { await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`); }
+        try { 
+            await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`);
+        }
         catch (err) { console.error(err); }
         finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
     }
 
-    // ===== 患者名を保存 =====
-    async function savePatientName(receptionId, patientName, okEl) {
+    // ===== 【新規追加】受付内「登録」ボタンの処理 =====
+    function registerRowDirect(receptionId) {
+        // 対象の行にある「✔ 確認完了」ボタンを探して、それを実行させる
+        const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
+        if (tr) {
+            const checkBtn = tr.querySelector('.btn-check');
+            if (checkBtn) {
+                checkBtn.click();
+            } else {
+                alert('この受付は既に確認済みです。');
+            }
+        }
+    }
+
+    // ===== 患者名のみを個別に保存 =====
+    async function savePatientNameOnly(receptionId) {
+        const inputEl = document.getElementById(`pinput-${receptionId}`);
+        const okEl = document.getElementById(`pok-${receptionId}`);
+        if (!inputEl) return;
+        
+        const patientName = inputEl.value;
         try {
             await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`);
             okEl.style.display = 'inline';
             setTimeout(() => { okEl.style.display = 'none'; }, 2000);
-        } catch (err) { console.error(err); }
+            setTimeout(fetchData, 1000); // 画面データを1秒後に再読み込みして「〇〇 様」表示を更新
+        } catch (err) { 
+            console.error(err); 
+            alert('患者名の保存に失敗しました');
+        }
     }
 
-    // ===== 受付番号を保存 =====
-    async function saveReceptionNo(receptionId, value) {
+    // ===== 受付番号のみを個別に保存 =====
+    async function saveReceptionNoOnly(receptionId) {
+        const inputEl = document.getElementById(`noinput-${receptionId}`);
+        const okEl = document.getElementById(`nook-${receptionId}`);
+        if (!inputEl) return;
+
+        const value = inputEl.value;
         try {
             await fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&receptionNo=${encodeURIComponent(value)}`);
-        } catch (err) { console.error(err); }
+            okEl.style.display = 'inline';
+            setTimeout(() => { okEl.style.display = 'none'; }, 2000);
+        } catch (err) { 
+            console.error(err); 
+            alert('受付番号の保存に失敗しました');
+        }
     }
 
     // ===== データ取得 =====
@@ -351,13 +360,8 @@
         try {
             const res = await fetch(GAS_URL + '?t=' + Date.now());
             const rawData = await res.json();
-            let myData = targetShopName
-                ? rawData.filter(r => r['受付店舗'] === targetShopName)
-                : rawData;
-
-            globalHasUnread = myData.some(r =>
-                r['ステータス'] === '未確認' && !pendingCheckIds.has(r['受付ID'])
-            );
+            let myData = targetShopName ? rawData.filter(r => r['受付店舗'] === targetShopName) : rawData;
+            globalHasUnread = myData.some(r => r['ステータス'] === '未確認' && !pendingCheckIds.has(r['受付ID']));
             updateTable(myData);
 
             if (globalHasUnread) { if (Date.now() >= muteUntilTime) startAlert(); }
@@ -376,71 +380,90 @@
             const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
+            // 患者名に「様」を付けるロジックの用意
+            const rawPatientName = row['患者名'] ? String(row['患者名']).trim() : '';
+            const displayPatientName = rawPatientName ? `${rawPatientName} 様` : '（未登録）';
+
             if (!tr) {
                 tr = document.createElement('tr');
                 tr.setAttribute('data-rid', rid);
 
-                // ── No.列（受付番号・手入力） ──
+                // ── No.列（受付IDの文字を排除し、登録ボタンを配置） ──
                 const tdNo = document.createElement('td');
                 tdNo.className = 'col-no';
-                const noInput = document.createElement('input');
-                noInput.type = 'text';
-                noInput.className = 'no-input';
-                noInput.value = row['受付番号'] || '';
-                noInput.placeholder = '—';
-                noInput.title = '受付番号を入力';
-                let noTimer = null;
-                noInput.addEventListener('input', () => {
-                    clearTimeout(noTimer);
-                    noTimer = setTimeout(() => saveReceptionNo(rid, noInput.value), 1000);
-                });
-                const ridLabel = document.createElement('div');
-                ridLabel.className = 'reception-id';
-                ridLabel.textContent = rid;
-                tdNo.appendChild(noInput);
-                tdNo.appendChild(ridLabel);
+                const regBtn = document.createElement('button');
+                regBtn.className = 'btn-register-row';
+                regBtn.textContent = '登録';
+                regBtn.onclick = () => registerRowDirect(rid);
+                tdNo.appendChild(regBtn);
 
                 // ── 日時列 ──
                 const tdDate = document.createElement('td');
                 tdDate.textContent = row['日時'] || '';
                 tdDate.style.fontSize = '13px';
 
-                // ── 患者名列 ──
+                // ── 患者名列（ユーザーID表示のIDSubは削除） ──
                 const tdPatient = document.createElement('td');
                 tdPatient.className = 'col-patient';
 
                 const nameDisp = document.createElement('div');
                 nameDisp.className = 'patient-name-display';
-                nameDisp.textContent = row['患者名'] || '（未登録）';
+                nameDisp.textContent = displayPatientName;
 
                 const lineSub = document.createElement('div');
                 lineSub.className = 'line-name-sub';
                 lineSub.textContent = 'LINE: ' + (row['LINE名'] || '');
 
-                const idSub = document.createElement('div');
-                idSub.className = 'user-id-sub';
-                idSub.textContent = row['ユーザーID'] || '';
-
-                // インライン編集UI
+                // 患者名インライン編集UI（個別ボタン化）
                 const editWrap = document.createElement('div');
-                editWrap.className = 'patient-edit-wrap';
+                editWrap.className = 'inline-edit-wrap';
                 const pInput = document.createElement('input');
                 pInput.type = 'text';
+                pInput.id = `pinput-${rid}`;
                 pInput.className = 'patient-input';
-                pInput.value = row['患者名'] || '';
+                pInput.value = rawPatientName;
                 pInput.placeholder = '患者名を入力...';
-                const saveBtn = document.createElement('button');
-                saveBtn.className = 'btn-save-patient';
-                saveBtn.textContent = '保存';
-                const saveOk = document.createElement('span');
-                saveOk.className = 'save-ok';
-                saveOk.textContent = '✓';
-                saveBtn.onclick = () => {
-                    nameDisp.textContent = pInput.value || '（未登録）';
-                    savePatientName(rid, pInput.value, saveOk);
-                };
-                editWrap.append(pInput, saveBtn, saveOk);
-                tdPatient.append(nameDisp, lineSub, idSub, editWrap);
+                
+                const pSaveBtn = document.createElement('button');
+                pSaveBtn.className = 'btn-save-inline btn-blue';
+                pSaveBtn.textContent = '名前保存';
+                pSaveBtn.onclick = () => savePatientNameOnly(rid);
+                
+                const pSaveOk = document.createElement('span');
+                pSaveOk.id = `pok-${rid}`;
+                pSaveOk.className = 'save-ok';
+                pSaveOk.textContent = '✓';
+                
+                editWrap.append(pInput, pSaveBtn, pSaveOk);
+                tdPatient.append(nameDisp, lineSub, editWrap);
+
+                // ── 受付番号列（個別保存ボタン化してここに移動） ──
+                const tdRepNo = document.createElement('td');
+                tdRepNo.className = 'col-repno';
+                
+                const repNoWrap = document.createElement('div');
+                repNoWrap.className = 'inline-edit-wrap';
+                
+                const noInput = document.createElement('input');
+                noInput.type = 'text';
+                noInput.id = `noinput-${rid}`;
+                noInput.className = 'no-input';
+                noInput.value = row['受付番号'] || '';
+                noInput.placeholder = '—';
+                noInput.title = '受付番号を入力';
+
+                const noSaveBtn = document.createElement('button');
+                noSaveBtn.className = 'btn-save-inline';
+                noSaveBtn.textContent = '番号保存';
+                noSaveBtn.onclick = () => saveReceptionNoOnly(rid);
+
+                const noSaveOk = document.createElement('span');
+                noSaveOk.id = `nook-${rid}`;
+                noSaveOk.className = 'save-ok';
+                noSaveOk.textContent = '✓';
+
+                repNoWrap.append(noInput, noSaveBtn, noSaveOk);
+                tdRepNo.appendChild(repNoWrap);
 
                 // ── 処方箋列 ──
                 const tdContent = document.createElement('td');
@@ -488,25 +511,36 @@
                     tdAction.style.color = '#9ca3af';
                 }
 
-                tr.append(tdNo, tdDate, tdPatient, tdContent, tdAction);
+                // 順番に組み立てる
+                tr.append(tdNo, tdDate, tdPatient, tdRepNo, tdContent, tdAction);
                 tbody.appendChild(tr);
 
             } else {
-                // 既存行：ステータスと受付番号だけ差分更新
+                // 既存行のアップデート処理
                 const actionTd = tr.querySelector('td:last-child');
                 if (isDone && actionTd && actionTd.querySelector('.btn-check')) {
                     actionTd.textContent = '確認済';
                     actionTd.style.color = '#9ca3af';
                 }
-                const noInput = tr.querySelector('.no-input');
-                if (noInput && !noInput.matches(':focus') && row['受付番号'] !== undefined && noInput.value === '') {
+                
+                // フォーカスが当たっていない時だけ、裏の最新データを入力欄に反映
+                const pInput = tr.querySelector(`#pinput-${rid}`);
+                if (pInput && !pInput.matches(':focus')) {
+                    pInput.value = rawPatientName;
+                }
+                const nameDisp = tr.querySelector('.patient-name-display');
+                if (nameDisp) {
+                    nameDisp.textContent = displayPatientName;
+                }
+                const noInput = tr.querySelector(`#noinput-${rid}`);
+                if (noInput && !noInput.matches(':focus') && row['受付番号'] !== undefined) {
                     noInput.value = row['受付番号'] || '';
                 }
             }
             tr.classList.toggle('done', isDone);
         });
 
-        // 新しい順に並び替え（受付IDの末尾タイムスタンプ部分で比較）
+        // 新しい順に並び替え
         Array.from(tbody.querySelectorAll('tr'))
             .sort((a, b) => {
                 const idA = a.dataset.rid || '';
@@ -531,7 +565,8 @@
         return m ? `https://drive.google.com/file/d/${m[1]}/preview` : url;
     }
     function openModal(urls, startIndex = 0) {
-        modalUrls = urls; modalIndex = startIndex;
+        modalUrls = urls;
+        modalIndex = startIndex;
         imgModal.classList.add('open');
         renderModal();
         document.addEventListener('keydown', onModalKey);
