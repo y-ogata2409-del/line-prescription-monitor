@@ -160,6 +160,11 @@
 </head>
 <body>
 
+<div id="leakAlertBanner" style="display: none; background: #ef4444; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(239,68,68,0.3); animation: dotBlink 1s infinite;">
+    ⚠️ 【通知漏れ警告】LINE受信から30秒以上経過しても、通知が送られていない患者様がいます！ 
+    <span id="leakPatientNames" style="display: block; font-size: 14px; margin-top: 5px; background: rgba(0,0,0,0.15); padding: 5px 10px; border-radius: 4px;"></span>
+</div>
+
 <h1>💊 LINE処方箋受付 受信モニター</h1>
 <div id="shopName" class="shop-badge">店舗コード未指定</div>
 
@@ -799,6 +804,32 @@
     // ===== 起動 =====
     fetchData();
     setInterval(fetchData, 10000);
+
+    // ===== 追加：通知漏れがないかをGASに定期的に確認する関数 =====
+    function checkNotificationLeak() {
+        // GAS_URL は既存のものを使用
+        fetch(`${GAS_URL}?checkLeak=true`)
+            .then(response => response.json())
+            .then(result => {
+                const banner = document.getElementById('leakAlertBanner');
+                const nameSpan = document.getElementById('leakPatientNames');
+                
+                if (result.status === 'success' && result.leak) {
+                    // 通知漏れがある場合、バナーを表示して対象者名を書く
+                    banner.style.display = 'block';
+                    nameSpan.innerText = '対象：' + result.patients.join(', ');
+                } else {
+                    // 通知漏れがない場合は非表示にする
+                    banner.style.display = 'none';
+                }
+            })
+            .catch(err => console.error('通知漏れチェックエラー:', err));
+    }
+    
+    // 5秒ごとにバックグラウンドで通知漏れがないかチェックを走らせる
+    setInterval(checkNotificationLeak, 5000);
+    // 画面を開いた瞬間にも1回実行
+    checkNotificationLeak();
 </script>
 </body>
 </html>
