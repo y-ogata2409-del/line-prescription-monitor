@@ -254,6 +254,16 @@
     const statusDot   = document.getElementById('statusDot');
     const muteMasterBtn = document.getElementById('muteMasterBtn');
 
+    // ===== HTML属性用安全エスケープ関数 (バグ修正) =====
+    function escapeHtmlAttr(str) {
+        if (!str) return '';
+        return str.replace(/&/g, '&amp;')
+                  .replace(/"/g, '&quot;')
+                  .replace(/'/g, '&#39;')
+                  .replace(/</g, '&lt;')
+                  .replace(/>/g, '&gt;');
+    }
+
     document.getElementById('initBtn').addEventListener('click', () => {
         sound.play().then(() => {
             sound.pause(); sound.currentTime = 0;
@@ -382,7 +392,7 @@
 
         alert('LINE通知の送信リクエストを受け付けました。');
 
-        // 非同期でGASへnoticeパラメータおよびメッセージ本文(message)を投げる
+        // 非同期でGASへパラメータを投げる
         fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&message=${encodeURIComponent(message)}`)
             .catch(err => {
                 console.error(err);
@@ -459,32 +469,38 @@
             const rawPatientName = row['患者名'] ? String(row['患者名']).trim() : '';
             const displayPatientName = rawPatientName ? `${rawPatientName} 様` : '（未登録）';
 
-            // ── 処方箋（画像ボタンまたは長文テキスト用切り替え表示） ──
+            // ── 処方箋（エスケープ関数を噛ませて属性エラーを完全に防止） ──
             let prescriptionHtml = '';
             const rawContent = row['テキスト / 画像URL'] || '';
             if (rawContent.startsWith('http')) {
                 const urls = rawContent.split(',').map(u => u.trim()).filter(Boolean);
                 if (urls.length === 1) {
-                    prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(['${urls[0]}'], 0)">📸 処方箋を確認</button></div>`;
+                    const singleUrlJson = escapeHtmlAttr(JSON.stringify([urls[0]]));
+                    prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(${singleUrlJson}, 0)">📸 処方箋を確認</button></div>`;
                 } else {
                     let btnSub = '';
-                    urls.forEach((u, i) => { btnSub += `<button class="img-link" onclick="openModal(${JSON.stringify(urls)}, ${i})">[${i + 1}]</button>`; });
+                    urls.forEach((u, i) => { 
+                        const urlsJson = escapeHtmlAttr(JSON.stringify(urls));
+                        btnSub += `<button class="img-link" onclick="openModal(${urlsJson}, ${i})">[${i + 1}]</button>`; 
+                    });
+                    const allUrlsJson = escapeHtmlAttr(JSON.stringify(urls));
                     prescriptionHtml = `
                         <div class="img-container">
-                            <button class="img-link-all" onclick="openModal(${JSON.stringify(urls)}, 0)">📋 ${urls.length}枚まとめて確認</button>
+                            <button class="img-link-all" onclick="openModal(${allUrlsJson}, 0)">📋 ${urls.length}枚まとめて確認</button>
                             ${btnSub}
                         </div>`;
                 }
             } else {
                 if (rawContent.length > 30) {
                     const shortText = rawContent.substring(0, 30) + '...';
+                    const escapedContent = escapeHtmlAttr(JSON.stringify(rawContent));
                     prescriptionHtml = `
                         <div class="text-preview-box">
-                            <span>${shortText}</span>
-                            <button class="btn-text-more" onclick="openTextModal(${JSON.stringify(rawContent)})">全文確認</button>
+                            <span>${escapeHtmlAttr(shortText)}</span>
+                            <button class="btn-text-more" onclick="openTextModal(${escapedContent})">全文確認</button>
                         </div>`;
                 } else {
-                    prescriptionHtml = `<span style="font-size:13px;">${rawContent}</span>`;
+                    prescriptionHtml = `<span style="font-size:13px;">${escapeHtmlAttr(rawContent)}</span>`;
                 }
             }
 
@@ -503,14 +519,14 @@
                     <div class="patient-name-display">${displayPatientName}</div>
                     <div class="line-name-sub">LINE: ${row['LINE名'] || ''}</div>
                     <div class="inline-edit-wrap">
-                        <input type="text" id="pinput-${rid}" class="patient-input" value="${rawPatientName}" placeholder="患者名を入力...">
+                        <input type="text" id="pinput-${rid}" class="patient-input" value="${escapeHtmlAttr(rawPatientName)}" placeholder="患者名を入力...">
                         <button class="btn-save-inline btn-blue" onclick="savePatientNameOnly('${rid}')">名前保存</button>
                         <span id="pok-${rid}" class="save-ok">✓</span>
                     </div>
                 </td>
                 <td class="col-repno">
                     <div class="inline-edit-wrap">
-                        <input type="text" id="noinput-${rid}" class="no-input" value="${row['受付番号'] || ''}" placeholder="—">
+                        <input type="text" id="noinput-${rid}" class="no-input" value="${escapeHtmlAttr(row['受付番号'] || '')}" placeholder="—">
                         <button class="btn-save-inline" onclick="saveReceptionNoOnly('${rid}')">番号保存</button>
                         <span id="nook-${rid}" class="save-ok">✓</span>
                     </div>
