@@ -28,8 +28,7 @@
         .banner-text strong { font-size: 18px; display: block; margin-bottom: 4px; }
         .banner-text span   { font-size: 13px; opacity: 0.9; }
         #initBtn {
-            background: white;
-            color: #dc2626; border: none; border-radius: 8px;
+            background: white; color: #dc2626; border: none; border-radius: 8px;
             padding: 14px 24px; font-size: 17px; font-weight: bold; cursor: pointer;
             white-space: nowrap; flex-shrink: 0;
             animation: btnBounce 1.5s infinite ease-in-out;
@@ -44,17 +43,16 @@
 
         /* ===== ステータスバー ===== */
         .status-bar {
-            background: #fff;
-            padding: 12px 16px; border-radius: 8px;
+            background: #fff; padding: 12px 16px; border-radius: 8px;
             margin-bottom: 20px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);
             display: flex; align-items: center; gap: 12px;
         }
         .status-dot { width: 10px; height: 10px; border-radius: 50%; background: #22c55e; flex-shrink: 0; }
         .status-dot.alerting { background: #ef4444; animation: dotBlink 0.8s infinite; }
         @keyframes dotBlink { 0%,100% { opacity:1; } 50% { opacity:0.2; } }
+        .status-text { font-weight: bold; font-size: 15px; }
         .btn-mute-master {
-            background: #ea580c;
-            color: white; border: none; border-radius: 4px;
+            background: #ea580c; color: white; border: none; border-radius: 4px;
             cursor: pointer; font-weight: bold; display: none;
             padding: 10px 18px; font-size: 15px; margin-left: auto;
         }
@@ -68,7 +66,6 @@
         /* ===== テーブル ===== */
         table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
         th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #ddd; vertical-align: middle; }
-
         th { background-color: #4b5563; color: #ffffff !important; font-size: 13px; font-weight: bold; }
         tr.done td { background-color: #f9fafb; }
 
@@ -76,8 +73,8 @@
         .col-patient { width: 240px; }
         .col-repno { width: 150px; }
         .col-prescription { min-width: 250px; color: #1e293b; }
-        .col-action { width: 95px; text-align: center; }
-        .col-notice { width: 110px; text-align: center; }
+        .col-action { width: 105px; text-align: center; }
+        .col-notice { width: 95px; text-align: center; }
 
         /* 受付番号入力枠 */
         .no-input {
@@ -99,11 +96,10 @@
             border-radius: 4px; font-size: 13px; color: #1e293b; background: #f8fafc;
         }
         .patient-input:focus { outline: none; border-color: #6366f1; background: white; }
-
+        
         /* 保存・確認・通知ボタン共通 */
         .btn-save-inline {
-            background: #10b981;
-            color: white; border: none; border-radius: 4px;
+            background: #10b981; color: white; border: none; border-radius: 4px;
             padding: 5px 8px; font-size: 12px; cursor: pointer; white-space: nowrap;
             font-weight: bold; transition: background 0.2s;
         }
@@ -128,28 +124,18 @@
         .btn-check { background: #ef4444; color: white; padding: 7px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-check:hover { background: #dc2626; }
 
-        /* ===== 通知ボタン・通知状況 ===== */
-        .notice-cell { display: flex; flex-direction: column; align-items: center; gap: 5px; }
-        .notice-status {
-            font-size: 11px; font-weight: bold; padding: 2px 8px; border-radius: 10px;
-            white-space: nowrap; line-height: 1.4;
-        }
-        .notice-status.unsent { background: #ffedd5; color: #c2410c; }
-        .notice-status.sent   { background: #e5e7eb; color: #6b7280; white-space: normal; text-align: center; }
-        .btn-notice {
-            background: #ea580c; color: white; border: none; border-radius: 4px;
-            width: 84px; padding: 7px 0; font-size: 13px; font-weight: bold;
-            cursor: pointer; white-space: nowrap; box-sizing: border-box;
-        }
+        /* 通知ボタン（通常時） */
+        .btn-notice { background: #ea580c; color: white; padding: 7px 10px; font-size: 13px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; }
         .btn-notice:hover { background: #c2410c; }
-        .btn-notice.btn-notice-sent { background: #9ca3af; }
-        .btn-notice.btn-notice-sent:hover { background: #6b7280; }
+        
+        /* 通知ボタン（通知済のグレー状態） */
+        .btn-notice.sent { background: #9ca3af; color: white; }
+        .btn-notice.sent:hover { background: #7b828e; }
 
-        /* ===== モーダル（共通背景） ===== */
+        /* ===== モーダル ===== */
         .modal-mask { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.82); align-items: center; justify-content: center; flex-direction: column; }
         .modal-mask.open { display: flex; }
-
-        /* 画像モーダル専用設定 */
+        
         .modal-header { width: 100%; max-width: 900px; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; color: white; }
         .modal-counter { font-size: 15px; font-weight: bold; opacity: 0.9; }
         .modal-close { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 15px; font-weight: bold; }
@@ -165,23 +151,11 @@
         .open-external { margin-left: auto; background: rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: flex; align-items: center; }
         .open-external:hover { background: rgba(255,255,255,0.3); }
 
-        /* テキスト確認モーダル専用窓 */
         .text-window { background: white; width: 90%; max-width: 550px; border-radius: 8px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 16px; }
         .text-window-title { font-size: 16px; font-weight: bold; color: #333; margin: 0; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; }
         .text-window-content { font-size: 14px; color: #1e293b; white-space: pre-wrap; line-height: 1.6; max-height: 300px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
-        .text-window-close { background: #4b5563; color: white; border: none; border-radius: 6px; padding: 10px 18px; font-weight: bold; cursor: pointer; text-align: center; }
-        .text-window-close:hover { filter: brightness(0.92); }
-
-        /* 通知モーダル専用 */
-        .notice-target-label { font-size: 13px; color: #475569; }
-        .notice-textarea {
-            width: 100%; min-height: 150px; font-size: 14px; padding: 10px;
-            border: 1px solid #cbd5e1; border-radius: 6px; resize: vertical;
-            box-sizing: border-box; font-family: inherit; line-height: 1.6; color: #1e293b;
-        }
-        .notice-textarea:focus { outline: none; border-color: #ea580c; box-shadow: 0 0 0 2px rgba(234,88,12,0.15); }
-        .notice-modal-status { font-size: 13px; font-weight: bold; min-height: 18px; }
-        .notice-modal-actions { display: flex; gap: 8px; justify-content: flex-end; }
+        .text-window-close { background: #4b5563; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: bold; cursor: pointer; text-align: center; }
+        .text-window-close:hover { background: #374151; }
     </style>
 </head>
 <body>
@@ -200,7 +174,7 @@
 
 <div class="status-bar">
     <div class="status-dot" id="statusDot"></div>
-    <span id="statusText" style="color:#666;font-weight:bold;">状態: 準備中...</span>
+    <span class="status-text" id="statusText" style="color:#666;">状態: 準備中...</span>
     <button class="btn-mute-master" id="muteMasterBtn">🔕 とりあえず音を止める</button>
 </div>
 
@@ -218,6 +192,7 @@
     <tbody></tbody>
 </table>
 
+<!-- ===== 画像確認モーダル ===== -->
 <div id="imgModal" class="modal-mask">
     <div class="modal-header">
         <span class="modal-counter" id="modalCounter"></span>
@@ -233,6 +208,7 @@
     </div>
 </div>
 
+<!-- ===== 全文テキスト確認モーダル ===== -->
 <div id="textModal" class="modal-mask">
     <div class="text-window">
         <p class="text-window-title">📝 メッセージ本文の確認</p>
@@ -241,15 +217,22 @@
     </div>
 </div>
 
+<!-- ===== LINE通知送信用モーダル ===== -->
 <div id="noticeModal" class="modal-mask">
     <div class="text-window">
         <p class="text-window-title">💬 LINE通知の送信</p>
-        <div class="notice-target-label">送信先: <strong id="noticeTargetName"></strong></div>
-        <textarea id="noticeMessageInput" class="notice-textarea" placeholder="送信するメッセージを入力してください"></textarea>
-        <div class="notice-modal-status" id="noticeModalStatus"></div>
-        <div class="notice-modal-actions">
-            <button class="text-window-close" style="background:#9ca3af;" onclick="closeNoticeModal()">キャンセル</button>
-            <button class="text-window-close" style="background:#ea580c;" id="noticeSendBtn" onclick="confirmSendNotice()">送信する</button>
+        <div>
+            <label style="font-weight:bold; font-size:13px; color:#4b5563; display:block; margin-bottom:4px;">テンプレート選択</label>
+            <select id="noticeTemplate" style="width:100%; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:14px; margin-bottom:12px;">
+                <option value="ready">【定型文】お薬準備完了のお知らせ</option>
+                <option value="custom">✍ 自由入力（以下を書き換えてください）</option>
+            </select>
+            <label style="font-weight:bold; font-size:13px; color:#4b5563; display:block; margin-bottom:4px;">メッセージ内容</label>
+            <textarea id="noticeMessage" style="width:100%; height:120px; padding:8px; border:1px solid #cbd5e1; border-radius:4px; font-size:14px; resize:none; font-family:sans-serif;"></textarea>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end; margin-top:4px;">
+            <button class="text-window-close" style="background:#6b7280; margin:0; padding:8px 14px; font-size:13px;" onclick="closeNoticeModal()">キャンセル</button>
+            <button class="btn-notice" style="padding:8px 14px; font-size:13px;" id="submitNoticeBtn">送信する</button>
         </div>
     </div>
 </div>
@@ -269,18 +252,24 @@
     let isAlerting = false, muteUntilTime = 0;
     let globalHasUnread = false, isFetching = false;
     let pendingCheckIds = new Set();
+    let localNoticeSentIds = new Set(); // 画面上で通知完了したIDを一時記憶
     const MUTE_DURATION = 60000;
-
-    // 受付IDをキーにした最新の行データ。テキスト全文モーダルや通知モーダルから
-    // 安全に参照するために使う（onclick属性に直接データを埋め込まないようにする）。
-    let rowDataMap = {};
-    let currentNoticeId = null;
 
     const sound       = document.getElementById('noticeSound');
     const audioBanner = document.getElementById('audioBanner');
     const statusText  = document.getElementById('statusText');
     const statusDot   = document.getElementById('statusDot');
     const muteMasterBtn = document.getElementById('muteMasterBtn');
+
+    // ===== HTML属性用安全エスケープ関数 =====
+    function escapeHtmlAttr(str) {
+        if (!str) return '';
+        return String(str).replace(/&/g, '&amp;')
+                          .replace(/"/g, '&quot;')
+                          .replace(/'/g, '&#39;')
+                          .replace(/</g, '&lt;')
+                          .replace(/>/g, '&gt;');
+    }
 
     document.getElementById('initBtn').addEventListener('click', () => {
         sound.play().then(() => {
@@ -295,7 +284,6 @@
             alert('音声の有効化に失敗しました。ページを再読み込みしてもう一度お試しください。');
         });
     });
-
     muteMasterBtn.addEventListener('click', triggerMute);
 
     // ===== アラート制御 =====
@@ -309,7 +297,6 @@
         statusText.style.color = '#ef4444';
         statusDot.classList.add('alerting');
         muteMasterBtn.classList.add('visible');
-
         volumeInterval = setInterval(() => {
             if (sound.volume < 0.9) sound.volume = Math.min(1.0, sound.volume + 0.2);
             else clearInterval(volumeInterval);
@@ -353,25 +340,86 @@
         pendingCheckIds.add(receptionId);
         btnElement.disabled = true; btnElement.innerText = '処理中...';
         const targetRow = btnElement.closest('tr');
-        if (targetRow) { targetRow.classList.add('done'); btnElement.parentElement.innerText = '確認済'; }
+        if (targetRow) { targetRow.classList.add('done'); btnElement.parentElement.innerHTML = '<span style="color:#22c55e; font-weight:bold;">✅確認済</span>'; }
 
         const remaining = document.querySelectorAll('#dataTable .btn-check:not(:disabled)');
         if (remaining.length === 0) { globalHasUnread = false; clearAllMuteState(); }
         else { stopAlert(); muteUntilTime = Date.now() + MUTE_DURATION; updateCountdownText(); startCountdownDisplay(); }
 
-        try {
+        try { 
             await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`);
         }
         catch (err) { console.error(err); }
         finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
     }
 
+    // ===== LINE通知送信用モーダル制御 =====
+    let activeNoticeReceptionId = null;
+    const noticeTemplates = {
+        'ready': 'お薬のご用意ができました。お気をつけてご来局ください。',
+        'custom': ''
+    };
+
+    function sendLineNotice(receptionId) {
+        activeNoticeReceptionId = receptionId;
+        document.getElementById('noticeTemplate').value = 'ready';
+        document.getElementById('noticeMessage').value = noticeTemplates['ready'];
+        document.getElementById('noticeModal').classList.add('open');
+    }
+
+    function closeNoticeModal() {
+        document.getElementById('noticeModal').classList.remove('open');
+        activeNoticeReceptionId = null;
+    }
+
+    document.getElementById('noticeTemplate').addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (val === 'ready') {
+            document.getElementById('noticeMessage').value = noticeTemplates['ready'];
+        } else {
+            document.getElementById('noticeMessage').value = '';
+            document.getElementById('noticeMessage').focus();
+        }
+    });
+
+    document.getElementById('submitNoticeBtn').addEventListener('click', () => {
+        if (!activeNoticeReceptionId) return;
+        const message = document.getElementById('noticeMessage').value.trim();
+        if (!message) {
+            alert('メッセージ内容を入力してください。');
+            return;
+        }
+
+        if (!confirm('この内容で患者へLINE通知を送信しますか？')) return;
+
+        const receptionId = activeNoticeReceptionId;
+        closeNoticeModal();
+
+        localNoticeSentIds.add(receptionId);
+        const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
+        if (tr) {
+            const btnNotice = tr.querySelector('.btn-notice');
+            if (btnNotice) {
+                btnNotice.className = 'btn-notice sent';
+                btnNotice.innerText = '💬 通知済';
+            }
+        }
+
+        alert('LINE通知の送信リクエストを受け付けました。');
+
+        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&message=${encodeURIComponent(message)}`)
+            .catch(err => {
+                console.error(err);
+                alert('LINE通知送信中にエラーが発生しました。インターネット接続を確認してください。');
+            });
+    });
+
     // ===== 患者名のみを非同期で保存 =====
     function savePatientNameOnly(receptionId) {
         const inputEl = document.getElementById(`pinput-${receptionId}`);
         const okEl = document.getElementById(`pok-${receptionId}`);
         if (!inputEl) return;
-
+        
         const patientName = inputEl.value;
         okEl.style.display = 'inline';
         setTimeout(() => { okEl.style.display = 'none'; }, 2000);
@@ -413,11 +461,6 @@
             const res = await fetch(GAS_URL + '?t=' + Date.now());
             const rawData = await res.json();
             let myData = targetShopName ? rawData.filter(r => r['受付店舗'] === targetShopName) : rawData;
-
-            // 受付IDをキーにしたマップを更新（モーダル用に参照される）
-            rowDataMap = {};
-            myData.forEach(r => { rowDataMap[r['受付ID']] = r; });
-
             globalHasUnread = myData.some(r => r['ステータス'] === '未確認' && !pendingCheckIds.has(r['受付ID']));
             updateTable(myData);
 
@@ -434,74 +477,74 @@
 
         sorted.forEach(row => {
             const rid    = row['受付ID'] || '';
+            if (!rid) return; // IDがない不正な行はスキップ
+            
             const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
             const rawPatientName = row['患者名'] ? String(row['患者名']).trim() : '';
             const displayPatientName = rawPatientName ? `${rawPatientName} 様` : '（未登録）';
 
-            // ── 処方箋（画像ボタンまたは長文テキスト用切り替え表示） ──
+            // ── 処方箋 ──
             let prescriptionHtml = '';
             const rawContent = row['テキスト / 画像URL'] || '';
-            if (rawContent.startsWith('http')) {
-                const urls = rawContent.split(',').map(u => u.trim()).filter(Boolean);
+            if (String(rawContent).startsWith('http')) {
+                const urls = String(rawContent).split(',').map(u => u.trim()).filter(Boolean);
                 if (urls.length === 1) {
-                    prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(['${urls[0]}'], 0)">📸 処方箋を確認</button></div>`;
+                    const singleUrlJson = escapeHtmlAttr(JSON.stringify([urls[0]]));
+                    prescriptionHtml = `<div class="img-container"><button class="img-link" onclick="openModal(${singleUrlJson}, 0)">📸 処方箋を確認</button></div>`;
                 } else {
                     let btnSub = '';
-                    urls.forEach((u, i) => { btnSub += `<button class="img-link" onclick="openModal(${JSON.stringify(urls)}, ${i})">[${i + 1}]</button>`; });
+                    urls.forEach((u, i) => { 
+                        const urlsJson = escapeHtmlAttr(JSON.stringify(urls));
+                        btnSub += `<button class="img-link" onclick="openModal(${urlsJson}, ${i})">[${i + 1}]</button>`; 
+                    });
+                    const allUrlsJson = escapeHtmlAttr(JSON.stringify(urls));
                     prescriptionHtml = `
                         <div class="img-container">
-                            <button class="img-link-all" onclick="openModal(${JSON.stringify(urls)}, 0)">📋 ${urls.length}枚まとめて確認</button>
+                            <button class="img-link-all" onclick="openModal(${allUrlsJson}, 0)">📋 ${urls.length}枚まとめて確認</button>
                             ${btnSub}
                         </div>`;
                 }
             } else {
-                // 30文字を超えたら省略し、全文モーダルボタンを配置。
-                // テキスト本文は onclick 属性に直接埋め込まず、受付ID(rid)だけを渡して
-                // rowDataMap から安全に参照する（クォートを含む本文でも壊れないようにするため）。
-                if (rawContent.length > 30) {
-                    const shortText = rawContent.substring(0, 30) + '...';
+                if (String(rawContent).length > 30) {
+                    const shortText = String(rawContent).substring(0, 30) + '...';
+                    const escapedContent = escapeHtmlAttr(JSON.stringify(rawContent));
                     prescriptionHtml = `
                         <div class="text-preview-box">
-                            <span>${shortText}</span>
-                            <button class="btn-text-more" onclick="openTextModal('${rid}')">全文確認</button>
+                            <span>${escapeHtmlAttr(shortText)}</span>
+                            <button class="btn-text-more" onclick="openTextModal(${escapedContent})">全文確認</button>
                         </div>`;
                 } else {
-                    prescriptionHtml = `<span style="font-size:13px;">${rawContent}</span>`;
+                    prescriptionHtml = `<span style="font-size:13px;">${escapeHtmlAttr(rawContent)}</span>`;
                 }
             }
 
-            // 受付（確認完了）列のHTML
-            const actionHtml = isDone
-                ? `<span style="color:#9ca3af; font-weight:bold;">確認済</span>`
+            // 受付（確認完了）列のHTML（「✅確認済」に修正）
+            const actionHtml = isDone 
+                ? `<span style="color:#22c55e; font-weight:bold;">✅確認済</span>` 
                 : `<button class="btn-check" onclick="checkRow('${rid}', this)">✔ 確認完了</button>`;
 
-            // 通知列のHTML（通知状況：J列の値で未通知/送信済みを判定）
-            const noticeStatusRaw = row['通知状況'] ? String(row['通知状況']).trim() : '';
-            const noticeSent = noticeStatusRaw !== '';
-            const noticeStatusLabel = noticeSent ? noticeStatusRaw : '未通知';
-            const noticeHtml = `
-                <div class="notice-cell">
-                    <span class="notice-status ${noticeSent ? 'sent' : 'unsent'}">${noticeStatusLabel}</span>
-                    <button class="btn-notice ${noticeSent ? 'btn-notice-sent' : ''}" onclick="openNoticeModal('${rid}')">💬 通知</button>
-                </div>`;
+            // ★修正ポイント：スプレッドシートの見出し「通知」に対応
+            const isNoticeSent = (row['通知'] === '通知済' || localNoticeSentIds.has(rid));
+            const btnClass = isNoticeSent ? 'btn-notice sent' : 'btn-notice';
+            const btnText = isNoticeSent ? '💬 通知済' : '💬 通知';
+            const noticeHtml = `<button class="${btnClass}" onclick="sendLineNotice('${rid}')">${btnText}</button>`;
 
-            // 行全体のHTML構造
             const rowInnerHTML = `
                 <td class="col-date">${row['日時'] || ''}</td>
                 <td class="col-patient">
                     <div class="patient-name-display">${displayPatientName}</div>
                     <div class="line-name-sub">LINE: ${row['LINE名'] || ''}</div>
                     <div class="inline-edit-wrap">
-                        <input type="text" id="pinput-${rid}" class="patient-input" value="${rawPatientName}" placeholder="患者名を入力...">
+                        <input type="text" id="pinput-${rid}" class="patient-input" value="${escapeHtmlAttr(rawPatientName)}" placeholder="患者名を入力...">
                         <button class="btn-save-inline btn-blue" onclick="savePatientNameOnly('${rid}')">名前保存</button>
                         <span id="pok-${rid}" class="save-ok">✓</span>
                     </div>
                 </td>
                 <td class="col-repno">
                     <div class="inline-edit-wrap">
-                        <input type="text" id="noinput-${rid}" class="no-input" value="${row['受付番号'] || ''}" placeholder="—">
+                        <input type="text" id="noinput-${rid}" class="no-input" value="${escapeHtmlAttr(row['受付番号'] || '')}" placeholder="—">
                         <button class="btn-save-inline" onclick="saveReceptionNoOnly('${rid}')">番号保存</button>
                         <span id="nook-${rid}" class="save-ok">✓</span>
                     </div>
@@ -519,7 +562,7 @@
             } else {
                 const pInput = tr.querySelector(`#pinput-${rid}`);
                 const noInput = tr.querySelector(`#noinput-${rid}`);
-
+                
                 tr.querySelector('.col-prescription').innerHTML = prescriptionHtml;
                 tr.querySelector('.col-action').innerHTML = actionHtml;
                 tr.querySelector('.col-notice').innerHTML = noticeHtml;
@@ -544,85 +587,12 @@
     }
 
     // ===== テキスト専用モーダル制御 =====
-    function openTextModal(rid) {
-        const row = rowDataMap[rid];
-        const text = row ? (row['テキスト / 画像URL'] || '') : '';
+    function openTextModal(text) {
         document.getElementById('textModalContent').textContent = text;
         document.getElementById('textModal').classList.add('open');
     }
     function closeTextModal() {
         document.getElementById('textModal').classList.remove('open');
-    }
-
-    // ===== 通知モーダル制御 =====
-    function buildDefaultNoticeMessage(displayName) {
-        return `${displayName}\n\nお薬のご用意ができました。\n店頭にてお受け取りください。\n\nご来店をお待ちしております。`;
-    }
-
-    function openNoticeModal(rid) {
-        const row = rowDataMap[rid] || {};
-        const patientName = row['患者名'] ? String(row['患者名']).trim() : '';
-        const lineName = row['LINE名'] || '';
-        const displayName = patientName ? `${patientName} 様` : 'お客様';
-
-        currentNoticeId = rid;
-        document.getElementById('noticeTargetName').textContent = lineName ? `${displayName}（LINE: ${lineName}）` : displayName;
-        document.getElementById('noticeMessageInput').value = buildDefaultNoticeMessage(displayName);
-        document.getElementById('noticeModalStatus').textContent = '';
-
-        const sendBtn = document.getElementById('noticeSendBtn');
-        sendBtn.disabled = false;
-        sendBtn.textContent = '送信する';
-
-        document.getElementById('noticeModal').classList.add('open');
-    }
-
-    function closeNoticeModal() {
-        document.getElementById('noticeModal').classList.remove('open');
-        currentNoticeId = null;
-    }
-
-    function confirmSendNotice() {
-        if (!currentNoticeId) return;
-        const statusEl = document.getElementById('noticeModalStatus');
-        const msg = document.getElementById('noticeMessageInput').value;
-
-        if (!msg.trim()) {
-            statusEl.textContent = '⚠ メッセージを入力してください。';
-            statusEl.style.color = '#dc2626';
-            return;
-        }
-
-        const sendBtn = document.getElementById('noticeSendBtn');
-        const targetId = currentNoticeId;
-        sendBtn.disabled = true;
-        sendBtn.textContent = '送信中...';
-        statusEl.textContent = '';
-
-        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(targetId)}&notice=true&message=${encodeURIComponent(msg)}`)
-            .then(res => res.json())
-            .then(json => {
-                if (json && json.status === 'notice_sent') {
-                    statusEl.textContent = '✔ 送信しました。';
-                    statusEl.style.color = '#16a34a';
-                    fetchData();
-                    setTimeout(() => {
-                        if (currentNoticeId === targetId) closeNoticeModal();
-                    }, 1000);
-                } else {
-                    statusEl.textContent = '✖ 送信に失敗しました。もう一度お試しください。';
-                    statusEl.style.color = '#dc2626';
-                }
-                sendBtn.disabled = false;
-                sendBtn.textContent = '送信する';
-            })
-            .catch(err => {
-                console.error(err);
-                statusEl.textContent = '✖ 送信に失敗しました。通信環境をご確認ください。';
-                statusEl.style.color = '#dc2626';
-                sendBtn.disabled = false;
-                sendBtn.textContent = '送信する';
-            });
     }
 
     // ===== 画像モーダル制御 =====
@@ -636,7 +606,7 @@
     const openExternal = document.getElementById('openExternal');
 
     function toPreviewUrl(url) {
-        const m = url.match(/\/file\/d\/([^\/]+)/);
+        const m = String(url).match(/\/file\/d\/([^\/]+)/);
         return m ? `https://drive.google.com/file/d/${m[1]}/preview` : url;
     }
     function openModal(urls, startIndex = 0) {
@@ -673,7 +643,6 @@
     prevBtn.addEventListener('click', () => { if (modalIndex > 0) { modalIndex--; renderModal(); } });
     nextBtn.addEventListener('click', () => { if (modalIndex < modalUrls.length - 1) { modalIndex++; renderModal(); } });
 
-    // 画面外クリックで閉じる処理
     window.addEventListener('click', e => {
         if (e.target === imgModal) closeImgModal();
         if (e.target === document.getElementById('textModal')) closeTextModal();
