@@ -294,6 +294,7 @@
 </div>
 
 <audio id="noticeSound" src="notification.mp3" preload="auto" loop></audio>
+<audio id="leakSound" src="notification2.mp3" preload="auto" loop></audio>
 
 <script>
     const GAS_URL = 'https://script.google.com/macros/s/AKfycbx0FTHjd8eDUkbavljJcaGNW0p29oHH490jY6IlN7eMPLPJ3oWpE2fsvFvFibr2SyAL/exec';
@@ -314,6 +315,7 @@
     const MUTE_DURATION = 60000;
 
     const sound       = document.getElementById('noticeSound');
+    const leakSound    = document.getElementById('leakSound'); // ★追加
     const audioBanner = document.getElementById('audioBanner');
     const statusText  = document.getElementById('statusText');
     const statusDot   = document.getElementById('statusDot');
@@ -332,6 +334,9 @@
     document.getElementById('initBtn').addEventListener('click', () => {
         sound.play().then(() => {
             sound.pause(); sound.currentTime = 0;
+            return leakSound.play(); // ★追加
+        }).then(() => {
+            leakSound.pause(); leakSound.currentTime = 0; // ★追加
             isAudioEnabled = true;
             audioBanner.classList.add('hidden');
             statusText.innerText = '状態: 定期監視中...';
@@ -367,6 +372,19 @@
         clearInterval(volumeInterval);
         statusDot.classList.remove('alerting');
         muteMasterBtn.classList.remove('visible');
+    }
+    let isLeakAlerting = false;
+    function startLeakAlert() {
+        if (isLeakAlerting || !isAudioEnabled) return;
+        isLeakAlerting = true;
+        leakSound.volume = 0.5;
+        leakSound.play().catch(e => console.log(e));
+    }
+    function stopLeakAlert() {
+        if (!isLeakAlerting) return;
+        isLeakAlerting = false;
+        leakSound.pause();
+        leakSound.currentTime = 0;
     }
     function triggerMute() {
         stopAlert();
@@ -501,6 +519,7 @@
 
         // ★ここにこの1行を追加します！
         document.getElementById('leakAlertBanner').style.display = 'none';
+        stopLeakAlert(); // ★追加
 
         localNoticeSentIds.add(receptionId);
         const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
@@ -907,42 +926,60 @@
 
     // ===== 追加・修正：通知漏れアラートの制御ロジック =====
     let leakMuteUntil = 0; // 消音の終了時刻を保持する変数（ミリ秒）
+    let leakFetchController = null; // ★追加：進行中のチェック用fetchを中断できるようにする
     
     // ★追加：5分間消音ボタンが押された時の処理
     function muteLeakAlertFor5Min() {
         const now = Date.now();
-        leakMuteUntil = now + (5 * 60 * 1000); // 現在時刻 + 5分（5 * 60秒 * 1000ミリ秒）
-        
-        // 即座にバナーを非表示にする
+        leakMuteUntil = now + (5 * 60 * 1000);
+    
+        if (leakFetchController) {
+            leakFetchController.abort();
+            leakFetchController = null;
+        }
+    
         document.getElementById('leakAlertBanner').style.display = 'none';
+        stopLeakAlert();
         console.log('通知漏れアラートを5分間消音しました。');
     }
     
     // ★修正：定期チェック関数（消音中かどうかの判定を追加）
     function checkNotificationLeak() {
-        // 現在が「消音期間内」であれば、GASへの問い合わせもスキップして非表示を維持
         if (Date.now() < leakMuteUntil) {
             document.getElementById('leakAlertBanner').style.display = 'none';
+            stopLeakAlert(); // ★追加
             return;
         }
     
-        fetch(`${GAS_URL}?checkLeak=true`)
+        if (leakFetchController) {
+            leakFetchController.abort();
+        }
+        leakFetchController = new AbortController();
+        const { signal } = leakFetchController;
+    
+        fetch(`${GAS_URL}?checkLeak=true`, { signal })
             .then(response => response.json())
             .then(result => {
-                // GAS通信中に「通知ボタン」が押されたり「消音」された場合を考慮し、再度消音チェック
+                leakFetchController = null;
                 if (Date.now() < leakMuteUntil) return;
     
                 const banner = document.getElementById('leakAlertBanner');
                 const nameSpan = document.getElementById('leakPatientNames');
-                
+    
                 if (result.status === 'success' && result.leak) {
                     banner.style.display = 'block';
                     nameSpan.innerText = '対象：' + result.patients.join(', ');
+                    startLeakAlert(); // ★追加
                 } else {
                     banner.style.display = 'none';
+                    stopLeakAlert(); // ★追加
                 }
             })
-            .catch(err => console.error('通知漏れチェックエラー:', err));
+            .catch(err => {
+                if (err.name !== 'AbortError') {
+                    console.error('通知漏れチェックエラー:', err);
+                }
+            });
     }
     
     // 5秒ごとにバックグラウンドで通知漏れがないかチェック
