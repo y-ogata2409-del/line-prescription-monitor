@@ -507,10 +507,16 @@
         alert('LINE通知の送信リクエストを受け付けました。');
 
         fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&message=${encodeURIComponent(message)}`)
-            .catch(err => {
-                console.error(err);
-                alert('LINE通知送信中にエラーが発生しました。インターネット接続を確認してください。');
-            });
+        .then(res => res.json())
+        .then(result => {
+            if (result.error) {
+                alert('記録処理でエラーが発生しました：\n' + result.error);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('LINE通知送信中にエラーが発生しました。インターネット接続を確認してください。');
+        });
     });
 
     // AI校正ボタンのクリックイベント
