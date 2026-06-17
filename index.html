@@ -309,6 +309,7 @@
     let globalHasUnread = false, isFetching = false;
     let pendingCheckIds = new Set();
     let localNoticeSentIds = new Set(); // 画面上で通知完了したIDを一時記憶
+    let pendingPatientNameSaves = {}; // { 受付ID: 保存中の患者名 }
     const MUTE_DURATION = 60000;
 
     const sound       = document.getElementById('noticeSound');
@@ -571,24 +572,28 @@
 
     // ===== 患者名のみを非同期で保存 =====
     function savePatientNameOnly(receptionId) {
-        const inputEl = document.getElementById(`pinput-${receptionId}`);
-        const okEl = document.getElementById(`pok-${receptionId}`);
-        if (!inputEl) return;
-        
-        const patientName = inputEl.value;
-        okEl.style.display = 'inline';
-        setTimeout(() => { okEl.style.display = 'none'; }, 2000);
+    const inputEl = document.getElementById(`pinput-${receptionId}`);
+    const okEl = document.getElementById(`pok-${receptionId}`);
+    if (!inputEl) return;
 
-        const nameDisp = inputEl.closest('td').querySelector('.patient-name-display');
-        if (nameDisp) {
-            nameDisp.textContent = patientName ? `${patientName} 様` : '（未登録）';
-        }
+    const patientName = inputEl.value;
+    okEl.style.display = 'inline';
+    setTimeout(() => { okEl.style.display = 'none'; }, 2000);
 
-        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`)
-            .catch(err => {
-                console.error(err);
-                alert('患者名の保存で通信エラーが発生しました。再読込してください。');
-            });
+    const nameDisp = inputEl.closest('td').querySelector('.patient-name-display');
+    if (nameDisp) {
+        nameDisp.textContent = patientName ? `${patientName} 様` : '（未登録）';
+    }
+
+    // ★追加：サーバーに反映されるまで、この受付IDの表示を保護する
+    pendingPatientNameSaves[receptionId] = patientName;
+
+    fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`)
+        .catch(err => {
+            console.error(err);
+            alert('患者名の保存で通信エラーが発生しました。再読込してください。');
+            delete pendingPatientNameSaves[receptionId]; // 失敗時は保護を解除
+        });
     }
 
     // ===== 受付番号のみを非同期で保存 =====
@@ -730,7 +735,14 @@
                 tr.querySelector('.col-action').innerHTML = actionHtml;
                 tr.querySelector('.col-notice').innerHTML = noticeHtml;
 
-                if (pInput && !pInput.matches(':focus')) {
+                const pendingName = pendingPatientNameSaves[rid];
+                if (pendingName !== undefined) {
+                    if (rawPatientName === pendingName) {
+                        // サーバー側に反映された。保護を解除して通常の同期に戻す
+                        delete pendingPatientNameSaves[rid];
+                    }
+                    // まだサーバーに反映されていない間は、古い値で上書きしない（何もしない）
+                } else if (pInput && !pInput.matches(':focus')) {
                     pInput.value = rawPatientName;
                     tr.querySelector('.patient-name-display').textContent = displayPatientName;
                 }
