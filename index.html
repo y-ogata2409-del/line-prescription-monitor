@@ -156,6 +156,21 @@
         .text-window-content { font-size: 14px; color: #1e293b; white-space: pre-wrap; line-height: 1.6; max-height: 300px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
         .text-window-close { background: #4b5563; color: white; border: none; border-radius: 6px; padding: 10px; font-weight: bold; cursor: pointer; text-align: center; }
         .text-window-close:hover { background: #374151; }
+
+        .col-prescription { min-width: 160px; color: #1e293b; }
+        .col-log { width: 70px; text-align: center; }
+        .btn-log { background: #4b5563; color: white; border: none; border-radius: 4px; padding: 7px 8px; font-size: 12px; cursor: pointer; font-weight: bold; }
+        .btn-log:hover { background: #374151; }
+
+        .chat-container { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto; padding: 8px 4px; }
+        .chat-row { display: flex; flex-direction: column; max-width: 75%; }
+        .chat-row.from-patient { align-self: flex-start; align-items: flex-start; }
+        .chat-row.from-staff { align-self: flex-end; align-items: flex-end; }
+        .chat-bubble { padding: 8px 12px; border-radius: 14px; font-size: 13px; white-space: pre-wrap; line-height: 1.5; }
+        .chat-row.from-patient .chat-bubble { background: #ffffff; border: 1px solid #e2e8f0; color: #1e293b; }
+        .chat-row.from-staff .chat-bubble { background: #b7f0c2; color: #14532d; }
+        .chat-bubble.system { background: #e5e7eb; color: #4b5563; font-size: 12px; }
+        .chat-time { font-size: 10px; color: #94a3b8; margin-top: 2px; }
     </style>
 </head>
 <body>
@@ -197,6 +212,7 @@
             <th class="col-prescription">処方箋</th>
             <th class="col-action">受付</th>
             <th class="col-notice">通知</th>
+            <th class="col-log">ログ</th>
         </tr>
     </thead>
     <tbody></tbody>
@@ -224,6 +240,19 @@
         <p class="text-window-title">📝 メッセージ本文の確認</p>
         <div class="text-window-content" id="textModalContent"></div>
         <button class="text-window-close" onclick="closeTextModal()">閉じる</button>
+    </div>
+</div>
+
+<div id="chatLogModal" class="modal-mask">
+    <div class="text-window" style="max-width:600px;">
+        <p class="text-window-title">💬 やり取りのログ</p>
+        <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+            <label style="font-size:12px;">開始 <input type="date" id="chatLogStart" style="padding:5px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;"></label>
+            <label style="font-size:12px;">終了 <input type="date" id="chatLogEnd" style="padding:5px; border:1px solid #cbd5e1; border-radius:4px; font-size:12px;"></label>
+            <button class="btn-save-inline btn-blue" style="margin:0;" id="chatLogSearchBtn">再検索</button>
+        </div>
+        <div class="chat-container" id="chatLogContainer"></div>
+        <button class="text-window-close" onclick="closeChatLogModal()">閉じる</button>
     </div>
 </div>
 
@@ -679,6 +708,7 @@
                 <td class="col-prescription">${prescriptionHtml}</td>
                 <td class="col-action">${actionHtml}</td>
                 <td class="col-notice">${noticeHtml}</td>
+                <td class="col-log"><button class="btn-log" onclick="openChatLog('${escapeHtmlAttr(row['ユーザーID'])}')">📖 ログ</button></td>
             `;
 
             if (!tr) {
@@ -879,6 +909,86 @@
     // 5秒ごとにバックグラウンドで通知漏れがないかチェック
     setInterval(checkNotificationLeak, 5000);
     checkNotificationLeak();
+
+    let activeChatLogUserId = null;
+
+    function toDateInputValue(d) {
+        const y = d.getFullYear();
+        const m = String(d.getMonth() + 1).padStart(2, '0');
+        const day = String(d.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+    
+    function openChatLog(userId) {
+        if (!userId) return;
+        activeChatLogUserId = userId;
+    
+        const end = new Date();
+        const start = new Date();
+        start.setMonth(start.getMonth() - 3);
+        document.getElementById('chatLogStart').value = toDateInputValue(start);
+        document.getElementById('chatLogEnd').value = toDateInputValue(end);
+    
+        document.getElementById('chatLogModal').classList.add('open');
+        fetchChatLog();
+    }
+    
+    function closeChatLogModal() {
+        document.getElementById('chatLogModal').classList.remove('open');
+        activeChatLogUserId = null;
+    }
+    
+    document.getElementById('chatLogSearchBtn').addEventListener('click', fetchChatLog);
+    
+    async function fetchChatLog() {
+        if (!activeChatLogUserId) return;
+        const container = document.getElementById('chatLogContainer');
+        container.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:13px;">読み込み中...</div>';
+    
+        const start = document.getElementById('chatLogStart').value;
+        const end   = document.getElementById('chatLogEnd').value;
+    
+        try {
+            const params = new URLSearchParams({ chatLog: 'true', userId: activeChatLogUserId, start, end });
+            const res = await fetch(`${GAS_URL}?${params.toString()}`);
+            const data = await res.json();
+    
+            if (data.status !== 'success' || !data.records.length) {
+                container.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:13px;">この期間のやり取りはありません。</div>';
+                return;
+            }
+    
+            container.innerHTML = data.records.map(renderChatBubble).join('');
+            container.scrollTop = container.scrollHeight;
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = '<div style="text-align:center; color:#ef4444; font-size:13px;">通信エラーが発生しました。</div>';
+        }
+    }
+    
+    function renderChatBubble(r) {
+        if (r.type === 'staff') {
+            return `
+                <div class="chat-row from-staff">
+                    <div class="chat-bubble">${escapeHtmlAttr(r.text)}</div>
+                    <div class="chat-time">${escapeHtmlAttr(r.time)}</div>
+                </div>`;
+        }
+        if (r.type === 'patient_image') {
+            const badge = r.notified ? '✅ 通知済み' : '⚠️ 未通知';
+            return `
+                <div class="chat-row from-patient">
+                    <div class="chat-bubble system">📷 処方箋画像（${r.imageCount}枚）・${badge}</div>
+                    <div class="chat-time">${escapeHtmlAttr(r.time)}</div>
+                </div>`;
+        }
+        // patient_text
+        return `
+            <div class="chat-row from-patient">
+                <div class="chat-bubble">${escapeHtmlAttr(r.text)}</div>
+                <div class="chat-time">${escapeHtmlAttr(r.time)}</div>
+            </div>`;
+    }
 </script>
 </body>
 </html>
