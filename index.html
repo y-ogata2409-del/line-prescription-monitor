@@ -595,6 +595,13 @@
         const tbody = document.querySelector('#dataTable tbody');
         const sorted = [...data].reverse();
 
+        // ★追加
+        const activeEl = document.activeElement;
+        const isOurInput = activeEl && activeEl.id && tbody.contains(activeEl);
+        const savedFocusId  = isOurInput ? activeEl.id : null;
+        const savedSelStart = isOurInput && typeof activeEl.selectionStart === 'number' ? activeEl.selectionStart : null;
+        const savedSelEnd   = isOurInput && typeof activeEl.selectionEnd   === 'number' ? activeEl.selectionEnd   : null;
+        
         sorted.forEach(row => {
             const rid    = row['受付ID'] || '';
             if (!rid) return; // IDがない不正な行はスキップ
@@ -739,10 +746,26 @@
             // ── ここまで差し替え ──
         });
 
-        // 配列ソート
-        Array.from(tbody.querySelectorAll('tr'))
-            .sort((a, b) => (b.dataset.rid || '').localeCompare(a.dataset.rid || ''))
-            .forEach(r => tbody.appendChild(r));
+        // ★変更
+        const currentOrder = Array.from(tbody.children).map(tr => tr.dataset.rid || '');
+        const targetOrder  = [...currentOrder].sort((a, b) => b.localeCompare(a));
+        const alreadySorted = currentOrder.every((id, i) => id === targetOrder[i]);
+        
+        if (!alreadySorted) {
+            Array.from(tbody.querySelectorAll('tr'))
+                .sort((a, b) => (b.dataset.rid || '').localeCompare(a.dataset.rid || ''))
+                .forEach(r => tbody.appendChild(r));
+        
+            if (savedFocusId) {
+                const el = document.getElementById(savedFocusId);
+                if (el) {
+                    el.focus();
+                    if (savedSelStart !== null) {
+                        el.setSelectionRange(savedSelStart, savedSelEnd);
+                    }
+                }
+            }
+        }
     }
 
     // ===== テキスト専用モーダル制御 =====
