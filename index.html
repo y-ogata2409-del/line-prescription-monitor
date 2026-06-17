@@ -310,6 +310,7 @@
     let pendingCheckIds = new Set();
     let localNoticeSentIds = new Set(); // 画面上で通知完了したIDを一時記憶
     let pendingPatientNameSaves = {}; // { 受付ID: 保存中の患者名 }
+    let pendingReceptionNoSaves = {};   // ★追加
     const MUTE_DURATION = 60000;
 
     const sound       = document.getElementById('noticeSound');
@@ -398,16 +399,22 @@
         btnElement.disabled = true; btnElement.innerText = '処理中...';
         const targetRow = btnElement.closest('tr');
         if (targetRow) { targetRow.classList.add('done'); btnElement.parentElement.innerHTML = '<span style="color:#22c55e; font-weight:bold;">✅確認済</span>'; }
-
+    
         const remaining = document.querySelectorAll('#dataTable .btn-check:not(:disabled)');
         if (remaining.length === 0) { globalHasUnread = false; clearAllMuteState(); }
         else { stopAlert(); muteUntilTime = Date.now() + MUTE_DURATION; updateCountdownText(); startCountdownDisplay(); }
-
-        try { 
+    
+        try {
             await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`);
+            // ★変更：ここでは削除しない。サーバーのデータが「確認済」になったことを
+            //   updateTable側で確認できた時点で削除する。
+        } catch (err) {
+            console.error(err);
+            // ★変更：通信エラー時のみ保護を解除し、再試行できるようにする
+            pendingCheckIds.delete(receptionId);
+        } finally {
+            setTimeout(fetchData, 1500);
         }
-        catch (err) { console.error(err); }
-        finally { pendingCheckIds.delete(receptionId); setTimeout(fetchData, 1500); }
     }
 
     // ===== LINE通知送信用モーダル制御 =====
@@ -606,10 +613,14 @@
         okEl.style.display = 'inline';
         setTimeout(() => { okEl.style.display = 'none'; }, 2000);
 
+        // ★追加：サーバーに反映されるまで、この受付IDの表示を保護する
+        pendingReceptionNoSaves[receptionId] = value;
+
         fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&receptionNo=${encodeURIComponent(value)}`)
             .catch(err => {
                 console.error(err);
                 alert('受付番号の保存で通信エラーが発生しました。再読込してください。');
+                delete pendingReceptionNoSaves[receptionId]; // 失敗時は保護を解除
             });
     }
 
@@ -647,6 +658,10 @@
             if (!rid) return; // IDがない不正な行はスキップ
             
             const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
+            // ★追加：サーバーに反映されたことを確認できたら保護を解除する
+            if (row['ステータス'] === '確認済' && pendingCheckIds.has(rid)) {
+                pendingCheckIds.delete(rid);
+            }
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
             const rawPatientName = row['患者名'] ? String(row['患者名']).trim() : '';
@@ -746,7 +761,13 @@
                     pInput.value = rawPatientName;
                     tr.querySelector('.patient-name-display').textContent = displayPatientName;
                 }
-                if (noInput && !noInput.matches(':focus')) {
+                const pendingNo = pendingReceptionNoSaves[rid];
+                if (pendingNo !== undefined) {
+                    if (String(row['受付番号'] || '') === pendingNo) {
+                        delete pendingReceptionNoSaves[rid]; // サーバーに反映された
+                    }
+                    // まだ反映されていない間は古い値で上書きしない
+                } else if (noInput && !noInput.matches(':focus')) {
                     if (row['受付番号'] !== undefined) {
                         noInput.value = row['受付番号'] || '';
                     }
