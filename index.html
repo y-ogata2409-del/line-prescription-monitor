@@ -74,7 +74,7 @@
         .col-repno { width: 150px; }
         .col-prescription { min-width: 250px; color: #1e293b; }
         .col-action { width: 105px; text-align: center; }
-        .col-notice { width: 95px; text-align: center; }
+        .col-notice { width: 130px; text-align: center; }
 
         /* 受付番号入力枠 */
         .no-input {
@@ -131,6 +131,11 @@
         /* 通知ボタン（通知済のグレー状態） */
         .btn-notice.sent { background: #9ca3af; color: white; }
         .btn-notice.sent:hover { background: #7b828e; }
+
+        /* ★追加：通知せず完了ボタン（来局済みなど、LINE通知が不要なケース用） */
+        .btn-skip-notice { background: #475569; color: white; padding: 6px 8px; font-size: 11px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; white-space: nowrap; }
+        .btn-skip-notice:hover { background: #334155; }
+        .notice-btn-group { display: flex; flex-direction: column; gap: 4px; align-items: center; }
 
         /* ===== モーダル ===== */
         .modal-mask { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.82); align-items: center; justify-content: center; flex-direction: column; }
@@ -309,7 +314,7 @@
     let isAlerting = false, muteUntilTime = 0;
     let globalHasUnread = false, isFetching = false;
     let pendingCheckIds = new Set();
-    let localNoticeSentIds = new Set(); // 画面上で通知完了したIDを一時記憶
+    let localNoticeSentIds = new Set(); // 画面上で通知（または通知せず完了）処理をしたIDを一時記憶
     let pendingPatientNameSaves = {}; // { 受付ID: 保存中の患者名 }
     let pendingReceptionNoSaves = {};   // ★追加
     const MUTE_DURATION = 60000;
@@ -596,6 +601,36 @@
         }
     });
 
+    // ===== ★追加：通知せず完了（来局済みなど、LINE通知が不要なケース用） =====
+    function markDoneWithoutNotice(receptionId) {
+        if (!confirm('LINE通知を送信せずに、この受付を「通知済」として完了させます。\n（患者様が既に来局されている場合など、通知が不要なケースでご利用ください）\n\nよろしいですか？')) return;
+
+        // 実際に通知したわけではないが、対応完了として通知漏れアラートを止める
+        document.getElementById('leakAlertBanner').style.display = 'none';
+        stopLeakAlert();
+
+        localNoticeSentIds.add(receptionId);
+        const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
+        if (tr) {
+            const noticeTd = tr.querySelector('.col-notice');
+            if (noticeTd) {
+                noticeTd.innerHTML = `<button class="btn-notice sent" onclick="sendLineNotice('${receptionId}')">通知済</button>`;
+            }
+        }
+
+        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&noSend=true`)
+        .then(res => res.json())
+        .then(result => {
+            if (result.error) {
+                alert('処理中にエラーが発生しました：\n' + result.error);
+            }
+        })
+        .catch(err => {
+            console.error(err);
+            alert('通信エラーが発生しました。インターネット接続を確認してください。');
+        });
+    }
+
     // ===== 患者名のみを非同期で保存 =====
     function savePatientNameOnly(receptionId) {
     const inputEl = document.getElementById(`pinput-${receptionId}`);
@@ -728,9 +763,13 @@
 
             // ★修正ポイント：スプレッドシートの見出し「通知」に対応
             const isNoticeSent = (row['通知'] === '通知済' || localNoticeSentIds.has(rid));
-            const btnClass = isNoticeSent ? 'btn-notice sent' : 'btn-notice';
-            const btnText = isNoticeSent ? '通知済' : '💬 通知';
-            const noticeHtml = `<button class="${btnClass}" onclick="sendLineNotice('${rid}')">${btnText}</button>`;
+            // ★修正：未通知の場合は「💬 通知」ボタンに加えて「通知せず完了」ボタンも表示する
+            const noticeHtml = isNoticeSent
+                ? `<button class="btn-notice sent" onclick="sendLineNotice('${rid}')">通知済</button>`
+                : `<div class="notice-btn-group">
+                       <button class="btn-notice" onclick="sendLineNotice('${rid}')">💬 通知</button>
+                       <button class="btn-skip-notice" onclick="markDoneWithoutNotice('${rid}')" title="来局済みなど、LINE通知が不要な場合に使用します">通知せず完了</button>
+                   </div>`;
 
             const rowInnerHTML = `
                 <td class="col-date">${row['日時'] || ''}</td>
@@ -1044,6 +1083,15 @@
     
     function renderChatBubble(r) {
         if (r.type === 'staff') {
+            // ★追加：「通知せず完了」で記録されたログは、実際にLINEへ送信したメッセージと区別して表示する
+            const isNoSend = typeof r.text === 'string' && r.text.indexOf('【LINE通知なしで完了処理】') === 0;
+            if (isNoSend) {
+                return `
+                    <div class="chat-row from-staff">
+                        <div class="chat-bubble system">🛈 ${escapeHtmlAttr(r.text)}</div>
+                        <div class="chat-time">${escapeHtmlAttr(r.time)}</div>
+                    </div>`;
+            }
             return `
                 <div class="chat-row from-staff">
                     <div class="chat-bubble">${escapeHtmlAttr(r.text)}</div>
