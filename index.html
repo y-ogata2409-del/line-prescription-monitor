@@ -460,6 +460,10 @@
     // 行ごとのユーザーIDキャッシュ（患者情報モーダルで利用）
     let ridToUserIdMap = {};
     let ridToLineNameMap = {};
+    // ★追加：fetchData()の都度受け取る申し送り・個別通知時間をキャッシュしておく
+    //   （行ごとの個別fetchを廃止し、確認ボタン押下時やモーダル表示を即時化するため）
+    let ridToHandoverMap = {};
+    let ridToAlertMinutesMap = {};
 
     const sound       = document.getElementById('noticeSound');
     const leakSound   = document.getElementById('leakSound');
@@ -568,21 +572,11 @@
         // 患者名は既存の入力欄から取得
         const pInput = document.getElementById(`pinput-${rid}`);
         document.getElementById('patientModalName').value = pInput ? pInput.value : '';
-        // 申し送り・アラート時間はサーバーから取得
-        document.getElementById('patientModalHandover').value    = '';
-        document.getElementById('patientModalAlertMinutes').value = 60;
 
-        if (userId) {
-            fetch(`${GAS_URL}?getPatientInfo=true&userId=${encodeURIComponent(userId)}`)
-                .then(r => r.json())
-                .then(data => {
-                    if (data.status === 'success') {
-                        document.getElementById('patientModalHandover').value     = data.info.handover      || '';
-                        document.getElementById('patientModalAlertMinutes').value = data.info.alertMinutes  || 60;
-                    }
-                })
-                .catch(err => console.error(err));
-        }
+        // ★変更：申し送り・個別通知時間はサーバーへの個別fetchをせず、
+        //   直近のfetchData()で受け取ったキャッシュから即座に表示する
+        document.getElementById('patientModalHandover').value     = ridToHandoverMap[rid] || '';
+        document.getElementById('patientModalAlertMinutes').value = ridToAlertMinutesMap[rid] || 60;
 
         document.getElementById('patientInfoModal').classList.add('open');
     }
@@ -613,6 +607,10 @@
             badgeEl.textContent = handover ? '📋 申し送りあり' : '';
             badgeEl.style.display = handover ? 'inline-block' : 'none';
         }
+
+        // ★追加：キャッシュも即時更新（次回fetchData()を待たず、確認ボタン押下時に最新内容が出るように）
+        ridToHandoverMap[rid] = handover;
+        ridToAlertMinutesMap[rid] = alertMinutes;
 
         pendingPatientNameSaves[rid] = patientName;
 
@@ -651,14 +649,15 @@
         const remaining = document.querySelectorAll('#dataTable .btn-check:not(:disabled)');
         if (remaining.length === 0) { globalHasUnread = false; clearAllMuteState(); }
         else { stopAlert(); muteUntilTime = Date.now() + MUTE_DURATION; updateCountdownText(); startCountdownDisplay(); }
+
+        // ★変更：申し送りはGASのレスポンスを待たず、直近のfetchData()で得たキャッシュから即座に表示する
+        const cachedHandover = ridToHandoverMap[receptionId];
+        if (cachedHandover && cachedHandover.trim()) {
+            showHandoverAlert(cachedHandover.trim());
+        }
     
         try {
-            const res = await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`);
-            const result = await res.json();
-            // ★申し送りがあればモーダル表示
-            if (result.handover && result.handover.trim()) {
-                showHandoverAlert(result.handover.trim());
-            }
+            await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`);
         } catch (err) {
             console.error(err);
             pendingCheckIds.delete(receptionId);
@@ -1021,25 +1020,20 @@
             }
             tr.classList.toggle('done', isDone);
 
-            // 申し送りバッジの状態を非同期で反映
-            // （バッジはモーダル開閉時・保存時に即時更新するが、
-            //   画面初期表示や他端末での変更をページ読み込み時に同期するため）
+            // ★変更：申し送り・個別通知時間は doGet のレスポンスにすでに含まれているため、
+            //   行ごとの個別fetchは行わず、キャッシュ更新とバッジ表示のみ行う
+            const handoverText  = String(row['申し送り'] || '').trim();
+            const alertMinutesVal = row['個別通知時間'] ? parseInt(row['個別通知時間'], 10) : 60;
+            ridToHandoverMap[rid] = handoverText;
+            ridToAlertMinutesMap[rid] = alertMinutesVal;
+
             const badgeEl = document.getElementById(`handover-badge-${rid}`);
             if (badgeEl) {
-                const userId = ridToUserIdMap[rid];
-                if (userId && !tr.dataset.handoverFetched) {
-                    tr.dataset.handoverFetched = '1';
-                    fetch(`${GAS_URL}?getPatientInfo=true&userId=${encodeURIComponent(userId)}`)
-                        .then(r => r.json())
-                        .then(d => {
-                            if (d.status === 'success' && d.info.handover) {
-                                badgeEl.textContent  = '📋 申し送りあり';
-                                badgeEl.style.display = 'inline-block';
-                            } else {
-                                badgeEl.style.display = 'none';
-                            }
-                        })
-                        .catch(() => {});
+                if (handoverText) {
+                    badgeEl.textContent  = '📋 申し送りあり';
+                    badgeEl.style.display = 'inline-block';
+                } else {
+                    badgeEl.style.display = 'none';
                 }
             }
 
