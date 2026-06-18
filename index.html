@@ -89,6 +89,25 @@
         .patient-name-display { font-weight: bold; color: #1e293b; font-size: 15px; }
         .line-name-sub { font-size: 11px; color: #64748b; margin-top: 2px; }
 
+        /* 患者名列クリック可能エリア */
+        .patient-info-clickable {
+            cursor: pointer; padding: 4px 6px; border-radius: 6px;
+            transition: background 0.15s;
+            display: inline-block; margin-bottom: 2px;
+        }
+        .patient-info-clickable:hover { background: #eff6ff; }
+        .patient-info-clickable .hover-hint {
+            font-size: 10px; color: #93c5fd; display: none; margin-top: 1px;
+        }
+        .patient-info-clickable:hover .hover-hint { display: block; }
+
+        /* 申し送りバッジ */
+        .handover-badge {
+            display: inline-block; background: #fef3c7; color: #92400e;
+            border: 1px solid #fcd34d; font-size: 10px; font-weight: bold;
+            padding: 1px 6px; border-radius: 10px; margin-top: 3px;
+        }
+
         /* インライン編集レイアウト */
         .inline-edit-wrap { display: flex; align-items: center; gap: 4px; margin-top: 5px; }
         .patient-input {
@@ -132,15 +151,16 @@
         .btn-notice.sent { background: #9ca3af; color: white; }
         .btn-notice.sent:hover { background: #7b828e; }
 
-        /* ★追加：通知せず完了ボタン（来局済みなど、LINE通知が不要なケース用） */
+        /* 通知せず完了ボタン */
         .btn-skip-notice { background: #475569; color: white; padding: 6px 8px; font-size: 11px; border-radius: 4px; border: none; cursor: pointer; font-weight: bold; white-space: nowrap; }
         .btn-skip-notice:hover { background: #334155; }
         .notice-btn-group { display: flex; flex-direction: column; gap: 4px; align-items: center; }
 
-        /* ===== モーダル ===== */
+        /* ===== モーダル共通 ===== */
         .modal-mask { display: none; position: fixed; inset: 0; z-index: 1000; background: rgba(0,0,0,0.82); align-items: center; justify-content: center; flex-direction: column; }
         .modal-mask.open { display: flex; }
         
+        /* ===== 画像確認モーダル ===== */
         .modal-header { width: 100%; max-width: 900px; display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; color: white; }
         .modal-counter { font-size: 15px; font-weight: bold; opacity: 0.9; }
         .modal-close { background: rgba(255,255,255,0.15); color: white; border: none; border-radius: 6px; padding: 8px 16px; cursor: pointer; font-size: 15px; font-weight: bold; }
@@ -156,6 +176,7 @@
         .open-external { margin-left: auto; background: rgba(255,255,255,0.15); color: white; padding: 6px 14px; border-radius: 6px; border: none; cursor: pointer; font-size: 13px; white-space: nowrap; text-decoration: none; display: flex; align-items: center; }
         .open-external:hover { background: rgba(255,255,255,0.3); }
 
+        /* ===== テキスト・ログ共通ウィンドウ ===== */
         .text-window { background: white; width: 90%; max-width: 550px; border-radius: 8px; padding: 20px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); display: flex; flex-direction: column; gap: 16px; }
         .text-window-title { font-size: 16px; font-weight: bold; color: #333; margin: 0; border-bottom: 2px solid #f3f4f6; padding-bottom: 8px; }
         .text-window-content { font-size: 14px; color: #1e293b; white-space: pre-wrap; line-height: 1.6; max-height: 300px; overflow-y: auto; background: #f8fafc; padding: 12px; border-radius: 6px; border: 1px solid #e2e8f0; }
@@ -167,6 +188,7 @@
         .btn-log { background: #4b5563; color: white; border: none; border-radius: 4px; padding: 7px 8px; font-size: 12px; cursor: pointer; font-weight: bold; }
         .btn-log:hover { background: #374151; }
 
+        /* ===== チャットログ ===== */
         .chat-container { display: flex; flex-direction: column; gap: 10px; max-height: 60vh; overflow-y: auto; padding: 8px 4px; }
         .chat-row { display: flex; flex-direction: column; max-width: 75%; }
         .chat-row.from-patient { align-self: flex-start; align-items: flex-start; }
@@ -176,13 +198,82 @@
         .chat-row.from-staff .chat-bubble { background: #b7f0c2; color: #14532d; }
         .chat-bubble.system { background: #e5e7eb !important; color: #4b5563 !important; font-size: 12px; }
         .chat-time { font-size: 10px; color: #94a3b8; margin-top: 2px; }
+
+        /* ===== 患者情報モーダル ===== */
+        .patient-modal-window {
+            background: white; width: 90%; max-width: 480px; border-radius: 12px;
+            padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+            display: flex; flex-direction: column; gap: 18px;
+        }
+        .patient-modal-title {
+            font-size: 17px; font-weight: bold; color: #1e293b; margin: 0;
+            border-bottom: 2px solid #e2e8f0; padding-bottom: 10px;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .patient-modal-field label {
+            font-size: 12px; font-weight: bold; color: #64748b;
+            text-transform: uppercase; letter-spacing: 0.05em;
+            display: block; margin-bottom: 5px;
+        }
+        .patient-modal-field input,
+        .patient-modal-field textarea {
+            width: 100%; padding: 9px 11px; border: 1px solid #cbd5e1;
+            border-radius: 6px; font-size: 14px; color: #1e293b;
+            font-family: sans-serif;
+        }
+        .patient-modal-field input:focus,
+        .patient-modal-field textarea:focus {
+            outline: none; border-color: #6366f1;
+            box-shadow: 0 0 0 3px rgba(99,102,241,0.15);
+        }
+        .patient-modal-field input[readonly] {
+            background: #f1f5f9; color: #64748b; cursor: default;
+        }
+        .patient-modal-field textarea { resize: vertical; min-height: 80px; }
+        .patient-modal-field .field-hint {
+            font-size: 11px; color: #94a3b8; margin-top: 4px;
+        }
+        .patient-modal-footer {
+            display: flex; gap: 10px; justify-content: flex-end;
+        }
+        .btn-patient-cancel {
+            background: #e5e7eb; color: #374151; border: none; border-radius: 6px;
+            padding: 10px 20px; font-size: 14px; font-weight: bold; cursor: pointer;
+        }
+        .btn-patient-cancel:hover { background: #d1d5db; }
+        .btn-patient-save {
+            background: #6366f1; color: white; border: none; border-radius: 6px;
+            padding: 10px 24px; font-size: 14px; font-weight: bold; cursor: pointer;
+        }
+        .btn-patient-save:hover { background: #4f46e5; }
+
+        /* ===== 申し送りアラートモーダル ===== */
+        .handover-alert-window {
+            background: white; width: 90%; max-width: 440px; border-radius: 12px;
+            padding: 24px; box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+        }
+        .handover-alert-title {
+            font-size: 16px; font-weight: bold; color: #92400e; margin: 0 0 12px 0;
+            display: flex; align-items: center; gap: 8px;
+        }
+        .handover-alert-body {
+            background: #fffbeb; border: 1px solid #fcd34d; border-radius: 8px;
+            padding: 14px 16px; font-size: 15px; color: #1e293b;
+            white-space: pre-wrap; line-height: 1.7; margin-bottom: 18px;
+        }
+        .btn-handover-ok {
+            width: 100%; background: #f59e0b; color: white; border: none;
+            border-radius: 8px; padding: 13px; font-size: 15px;
+            font-weight: bold; cursor: pointer;
+        }
+        .btn-handover-ok:hover { background: #d97706; }
     </style>
 </head>
 <body>
 
 <div id="leakAlertBanner" style="display: none; background: #ef4444; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(239,68,68,0.3); position: relative;">
     <div style="margin-right: 120px;">
-        ⚠️ 【通知漏れ警告】LINE受信から3分以上経過しても、通知が送られていない患者様がいます！ 
+        ⚠️ 【通知漏れ警告】LINE受信から設定時間以上経過しても、通知が送られていない患者様がいます！ 
         <span id="leakPatientNames" style="display: block; font-size: 14px; margin-top: 5px; background: rgba(0,0,0,0.15); padding: 5px 10px; border-radius: 4px;"></span>
     </div>
     <button onclick="muteLeakAlertFor5Min()" style="position: absolute; right: 20px; top: 5px; background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: normal; transition: 0.2s;" onmouseover="this.style.background='rgba(255,255,255,0.4)'" onmouseout="this.style.background='rgba(255,255,255,0.2)'">
@@ -248,6 +339,7 @@
     </div>
 </div>
 
+<!-- ===== チャットログモーダル ===== -->
 <div id="chatLogModal" class="modal-mask">
     <div class="text-window" style="max-width:600px;">
         <p class="text-window-title">💬 やり取りのログ</p>
@@ -298,6 +390,52 @@
     </div>
 </div>
 
+<!-- ===== ★新規：患者情報モーダル ===== -->
+<div id="patientInfoModal" class="modal-mask">
+    <div class="patient-modal-window">
+        <p class="patient-modal-title">🏥 患者情報の確認・編集</p>
+        <input type="hidden" id="patientModalRid">
+        <input type="hidden" id="patientModalUserId">
+
+        <div class="patient-modal-field">
+            <label>患者名</label>
+            <input type="text" id="patientModalName" placeholder="例：山田 太郎">
+        </div>
+
+        <div class="patient-modal-field">
+            <label>LINE 表示名</label>
+            <input type="text" id="patientModalLineName" readonly>
+            <div class="field-hint">※ LINE名は変更できません</div>
+        </div>
+
+        <div class="patient-modal-field">
+            <label>📋 申し送り</label>
+            <textarea id="patientModalHandover" placeholder="例：早めの調剤を／一包化あり ヒート確認要／粉砕不可 など"></textarea>
+            <div class="field-hint">確認完了ボタンを押した際に画面に表示されます</div>
+        </div>
+
+        <div class="patient-modal-field">
+            <label>⏱ 個別通知アラート時間（分）</label>
+            <input type="number" id="patientModalAlertMinutes" min="1" max="480" value="60">
+            <div class="field-hint">LINE受信後、この時間（分）を超えても未通知の場合に警告します（デフォルト：60分）</div>
+        </div>
+
+        <div class="patient-modal-footer">
+            <button class="btn-patient-cancel" onclick="closePatientInfoModal()">キャンセル</button>
+            <button class="btn-patient-save" onclick="savePatientInfo()">保存する</button>
+        </div>
+    </div>
+</div>
+
+<!-- ===== ★新規：申し送りアラートモーダル ===== -->
+<div id="handoverAlertModal" class="modal-mask">
+    <div class="handover-alert-window">
+        <p class="handover-alert-title">📋 申し送り事項があります</p>
+        <div class="handover-alert-body" id="handoverAlertBody"></div>
+        <button class="btn-handover-ok" onclick="closeHandoverAlert()">確認しました</button>
+    </div>
+</div>
+
 <audio id="noticeSound" src="notification.mp3" preload="auto" loop></audio>
 <audio id="leakSound" src="notification2.mp3" preload="auto" loop></audio>
 
@@ -314,13 +452,17 @@
     let isAlerting = false, muteUntilTime = 0;
     let globalHasUnread = false, isFetching = false;
     let pendingCheckIds = new Set();
-    let localNoticeSentIds = new Set(); // 画面上で通知（または通知せず完了）処理をしたIDを一時記憶
-    let pendingPatientNameSaves = {}; // { 受付ID: 保存中の患者名 }
-    let pendingReceptionNoSaves = {};   // ★追加
+    let localNoticeSentIds = new Set();
+    let pendingPatientNameSaves = {};
+    let pendingReceptionNoSaves = {};
     const MUTE_DURATION = 60000;
 
+    // 行ごとのユーザーIDキャッシュ（患者情報モーダルで利用）
+    let ridToUserIdMap = {};
+    let ridToLineNameMap = {};
+
     const sound       = document.getElementById('noticeSound');
-    const leakSound    = document.getElementById('leakSound'); // ★追加
+    const leakSound   = document.getElementById('leakSound');
     const audioBanner = document.getElementById('audioBanner');
     const statusText  = document.getElementById('statusText');
     const statusDot   = document.getElementById('statusDot');
@@ -339,9 +481,9 @@
     document.getElementById('initBtn').addEventListener('click', () => {
         sound.play().then(() => {
             sound.pause(); sound.currentTime = 0;
-            return leakSound.play(); // ★追加
+            return leakSound.play();
         }).then(() => {
-            leakSound.pause(); leakSound.currentTime = 0; // ★追加
+            leakSound.pause(); leakSound.currentTime = 0;
             isAudioEnabled = true;
             audioBanner.classList.add('hidden');
             statusText.innerText = '状態: 定期監視中...';
@@ -415,6 +557,89 @@
         if (isAudioEnabled) { statusText.innerText = '状態: 定期監視中...'; statusText.style.color = '#22c55e'; }
     }
 
+    // ===== ★新規：患者情報モーダル =====
+    function openPatientInfoModal(rid) {
+        const userId   = ridToUserIdMap[rid]   || '';
+        const lineName = ridToLineNameMap[rid]  || '';
+
+        document.getElementById('patientModalRid').value    = rid;
+        document.getElementById('patientModalUserId').value = userId;
+        document.getElementById('patientModalLineName').value = lineName;
+        // 患者名は既存の入力欄から取得
+        const pInput = document.getElementById(`pinput-${rid}`);
+        document.getElementById('patientModalName').value = pInput ? pInput.value : '';
+        // 申し送り・アラート時間はサーバーから取得
+        document.getElementById('patientModalHandover').value    = '';
+        document.getElementById('patientModalAlertMinutes').value = 60;
+
+        if (userId) {
+            fetch(`${GAS_URL}?getPatientInfo=true&userId=${encodeURIComponent(userId)}`)
+                .then(r => r.json())
+                .then(data => {
+                    if (data.status === 'success') {
+                        document.getElementById('patientModalHandover').value     = data.info.handover      || '';
+                        document.getElementById('patientModalAlertMinutes').value = data.info.alertMinutes  || 60;
+                    }
+                })
+                .catch(err => console.error(err));
+        }
+
+        document.getElementById('patientInfoModal').classList.add('open');
+    }
+
+    function closePatientInfoModal() {
+        document.getElementById('patientInfoModal').classList.remove('open');
+    }
+
+    function savePatientInfo() {
+        const rid          = document.getElementById('patientModalRid').value;
+        const patientName  = document.getElementById('patientModalName').value.trim();
+        const handover     = document.getElementById('patientModalHandover').value.trim();
+        const alertMinutes = parseInt(document.getElementById('patientModalAlertMinutes').value, 10) || 60;
+
+        if (!confirm(`以下の内容で保存しますか？\n\n患者名：${patientName || '（空欄）'}\n申し送り：${handover || '（なし）'}\nアラート時間：${alertMinutes}分`)) return;
+
+        closePatientInfoModal();
+
+        // 画面上の患者名も即時更新
+        const pInput = document.getElementById(`pinput-${rid}`);
+        if (pInput) pInput.value = patientName;
+        const nameDisp = pInput ? pInput.closest('td').querySelector('.patient-name-display') : null;
+        if (nameDisp) nameDisp.textContent = patientName ? `${patientName} 様` : '（未登録）';
+
+        // 申し送りバッジを即時更新
+        const badgeEl = document.getElementById(`handover-badge-${rid}`);
+        if (badgeEl) {
+            badgeEl.textContent = handover ? '📋 申し送りあり' : '';
+            badgeEl.style.display = handover ? 'inline-block' : 'none';
+        }
+
+        pendingPatientNameSaves[rid] = patientName;
+
+        const params = new URLSearchParams({
+            update: 'true',
+            id: rid,
+            patientName: patientName,
+            handover: handover,
+            alertMinutes: alertMinutes
+        });
+        fetch(`${GAS_URL}?${params.toString()}`)
+            .catch(err => {
+                console.error(err);
+                alert('保存中に通信エラーが発生しました。');
+                delete pendingPatientNameSaves[rid];
+            });
+    }
+
+    // ===== ★新規：申し送りアラートモーダル =====
+    function showHandoverAlert(text) {
+        document.getElementById('handoverAlertBody').textContent = text;
+        document.getElementById('handoverAlertModal').classList.add('open');
+    }
+    function closeHandoverAlert() {
+        document.getElementById('handoverAlertModal').classList.remove('open');
+    }
+
     // ===== 受付（確認完了）ボタン =====
     async function checkRow(receptionId, btnElement) {
         if (pendingCheckIds.has(receptionId)) return;
@@ -428,12 +653,14 @@
         else { stopAlert(); muteUntilTime = Date.now() + MUTE_DURATION; updateCountdownText(); startCountdownDisplay(); }
     
         try {
-            await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`);
-            // ★変更：ここでは削除しない。サーバーのデータが「確認済」になったことを
-            //   updateTable側で確認できた時点で削除する。
+            const res = await fetch(`${GAS_URL}?id=${encodeURIComponent(receptionId)}`);
+            const result = await res.json();
+            // ★申し送りがあればモーダル表示
+            if (result.handover && result.handover.trim()) {
+                showHandoverAlert(result.handover.trim());
+            }
         } catch (err) {
             console.error(err);
-            // ★変更：通信エラー時のみ保護を解除し、再試行できるようにする
             pendingCheckIds.delete(receptionId);
         } finally {
             setTimeout(fetchData, 1500);
@@ -450,47 +677,33 @@
     function sendLineNotice(receptionId) {
         activeNoticeReceptionId = receptionId;
 
-        // 該当する行（tr）から現在の薬局名と受付番号を取得
         const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
         
-        // 画面上部に表示されている店舗名（選択中の店舗名）を取得
         const shopBadgeText = document.getElementById('shopName').innerText;
-        // 「全店舗のデータを表示中」などの場合は「薬局」とする
         const currentShop = shopBadgeText.includes('⚠️') ? '薬局' : shopBadgeText;
 
-        // 受付番号の入力枠から値を取得
         const noInput = tr ? tr.querySelector(`#noinput-${receptionId}`) : null;
         const repNo = noInput ? noInput.value.trim() : '';
 
-        // 受付番号があるかどうかで文章を切り替え
         let noText = '';
         if (repNo) {
             noText = `あなたの受付番号は【${repNo}番】です。\n\n`;
         }
 
-        // テンプレートメッセージをその場で動的に生成
         const dynamicTemplates = {
             'ready': `【${currentShop}】からのお知らせ\n\nお薬のご用意ができました。\n${noText}ご来局の際は、お気をつけてお越しください。`,
             'custom': `【${currentShop}】からのお知らせ\n\n`
         };
 
-        // 初期表示を「お薬準備完了」にセット
         document.getElementById('noticeTemplate').value = 'ready';
         document.getElementById('noticeMessage').value = dynamicTemplates['ready'];
         document.getElementById('noticeModal').classList.add('open');
 
-        // テンプレート切り替え時のイベントリスナーを再設定（動的テキストを反映するため）
         const templateSelect = document.getElementById('noticeTemplate');
-        
-        // 既存のイベントリスナーによる重複を防ぐため、一度削除して再配置するか、イベント内で動的に書き換えます
         templateSelect.onchange = (e) => {
             const val = e.target.value;
-            if (val === 'ready') {
-                document.getElementById('noticeMessage').value = dynamicTemplates['ready'];
-            } else {
-                document.getElementById('noticeMessage').value = dynamicTemplates['custom'];
-                document.getElementById('noticeMessage').focus();
-            }
+            document.getElementById('noticeMessage').value = val === 'ready' ? dynamicTemplates['ready'] : dynamicTemplates['custom'];
+            if (val !== 'ready') document.getElementById('noticeMessage').focus();
         };
     }
 
@@ -498,16 +711,6 @@
         document.getElementById('noticeModal').classList.remove('open');
         activeNoticeReceptionId = null;
     }
-
-    document.getElementById('noticeTemplate').addEventListener('change', (e) => {
-        const val = e.target.value;
-        if (val === 'ready') {
-            document.getElementById('noticeMessage').value = noticeTemplates['ready'];
-        } else {
-            document.getElementById('noticeMessage').value = '';
-            document.getElementById('noticeMessage').focus();
-        }
-    });
 
     document.getElementById('submitNoticeBtn').addEventListener('click', () => {
         if (!activeNoticeReceptionId) return;
@@ -522,9 +725,8 @@
         const receptionId = activeNoticeReceptionId;
         closeNoticeModal();
 
-        // ★ここにこの1行を追加します！
         document.getElementById('leakAlertBanner').style.display = 'none';
-        stopLeakAlert(); // ★追加
+        stopLeakAlert();
 
         localNoticeSentIds.add(receptionId);
         const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
@@ -551,43 +753,33 @@
         });
     });
 
-    // AI校正ボタンのクリックイベント
+    // AI校正ボタン
     document.getElementById('aiPolishBtn').addEventListener('click', async () => {
         const textValue = document.getElementById('noticeMessage').value;
         const aiBtn = document.getElementById('aiPolishBtn');
         
-        // 入力値のチェック
         if (!textValue.trim()) {
             alert('推敲するメッセージ内容を入力してください。');
             return;
         }
         
-        // チェックボックスの状態を取得
         const optWelcome = document.getElementById('aiOptWelcome').checked;
-        const optHours = document.getElementById('aiOptHours').checked;
-        const optLimit = document.getElementById('aiOptLimit').checked;
+        const optHours   = document.getElementById('aiOptHours').checked;
+        const optLimit   = document.getElementById('aiOptLimit').checked;
         
-        // ボタンの無効化（2重押し防止）
         aiBtn.disabled = true;
         aiBtn.innerText = '⏳ AI推敲中...';
         
         try {
-            // GASへリクエストを投げる
             const params = new URLSearchParams({
-                aiPolish: 'true',
-                text: textValue,
-                welcome: optWelcome,
-                hours: optHours,
-                limit: optLimit
+                aiPolish: 'true', text: textValue,
+                welcome: optWelcome, hours: optHours, limit: optLimit
             });
-            
             const res = await fetch(`${GAS_URL}?${params.toString()}`);
             const result = await res.json();
             
             if (result.status === 'success' && result.polishedText) {
-                // テキストエリアを書き換える
                 document.getElementById('noticeMessage').value = result.polishedText;
-                // テンプレート選択を「自由入力」に切り替える
                 document.getElementById('noticeTemplate').value = 'custom';
             } else {
                 alert('AIによる推敲に失敗しました: ' + (result.error || '不明なエラー'));
@@ -601,11 +793,10 @@
         }
     });
 
-    // ===== ★追加：通知せず完了（来局済みなど、LINE通知が不要なケース用） =====
+    // 通知せず完了
     function markDoneWithoutNotice(receptionId) {
         if (!confirm('LINE通知を送信せずに、この受付を「通知済」として完了させます。\n（患者様が既に来局されている場合など、通知が不要なケースでご利用ください）\n\nよろしいですか？')) return;
 
-        // 実際に通知したわけではないが、対応完了として通知漏れアラートを止める
         document.getElementById('leakAlertBanner').style.display = 'none';
         stopLeakAlert();
 
@@ -621,9 +812,7 @@
         fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&notice=true&noSend=true`)
         .then(res => res.json())
         .then(result => {
-            if (result.error) {
-                alert('処理中にエラーが発生しました：\n' + result.error);
-            }
+            if (result.error) alert('処理中にエラーが発生しました：\n' + result.error);
         })
         .catch(err => {
             console.error(err);
@@ -631,50 +820,46 @@
         });
     }
 
-    // ===== 患者名のみを非同期で保存 =====
+    // ===== 患者名のみを非同期で保存（インライン編集用・既存機能） =====
     function savePatientNameOnly(receptionId) {
-    const inputEl = document.getElementById(`pinput-${receptionId}`);
-    const okEl = document.getElementById(`pok-${receptionId}`);
-    if (!inputEl) return;
+        const inputEl = document.getElementById(`pinput-${receptionId}`);
+        const okEl    = document.getElementById(`pok-${receptionId}`);
+        if (!inputEl) return;
 
-    const patientName = inputEl.value;
-    okEl.style.display = 'inline';
-    setTimeout(() => { okEl.style.display = 'none'; }, 2000);
+        const patientName = inputEl.value;
+        okEl.style.display = 'inline';
+        setTimeout(() => { okEl.style.display = 'none'; }, 2000);
 
-    const nameDisp = inputEl.closest('td').querySelector('.patient-name-display');
-    if (nameDisp) {
-        nameDisp.textContent = patientName ? `${patientName} 様` : '（未登録）';
-    }
+        const nameDisp = inputEl.closest('td').querySelector('.patient-name-display');
+        if (nameDisp) nameDisp.textContent = patientName ? `${patientName} 様` : '（未登録）';
 
-    // ★追加：サーバーに反映されるまで、この受付IDの表示を保護する
-    pendingPatientNameSaves[receptionId] = patientName;
+        pendingPatientNameSaves[receptionId] = patientName;
 
-    fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`)
-        .catch(err => {
-            console.error(err);
-            alert('患者名の保存で通信エラーが発生しました。再読込してください。');
-            delete pendingPatientNameSaves[receptionId]; // 失敗時は保護を解除
-        });
+        fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&patientName=${encodeURIComponent(patientName)}`)
+            .catch(err => {
+                console.error(err);
+                alert('患者名の保存で通信エラーが発生しました。再読込してください。');
+                delete pendingPatientNameSaves[receptionId];
+            });
     }
 
     // ===== 受付番号のみを非同期で保存 =====
     function saveReceptionNoOnly(receptionId) {
         const inputEl = document.getElementById(`noinput-${receptionId}`);
-        const okEl = document.getElementById(`nook-${receptionId}`);
+        const okEl    = document.getElementById(`nook-${receptionId}`);
         if (!inputEl) return;
 
         const value = inputEl.value;
         okEl.style.display = 'inline';
         setTimeout(() => { okEl.style.display = 'none'; }, 2000);
 
-        // ★追加：サーバーに反映されるまで、この受付IDの表示を保護する
         pendingReceptionNoSaves[receptionId] = value;
 
         fetch(`${GAS_URL}?update=true&id=${encodeURIComponent(receptionId)}&receptionNo=${encodeURIComponent(value)}`)
             .catch(err => {
                 console.error(err);
                 alert('受付番号の保存で通信エラーが発生しました。再読込してください。');
-                delete pendingReceptionNoSaves[receptionId]; // 失敗時は保護を解除
+                delete pendingReceptionNoSaves[receptionId];
             });
     }
 
@@ -700,7 +885,6 @@
         const tbody = document.querySelector('#dataTable tbody');
         const sorted = [...data].reverse();
 
-        // ★追加
         const activeEl = document.activeElement;
         const isOurInput = activeEl && activeEl.id && tbody.contains(activeEl);
         const savedFocusId  = isOurInput ? activeEl.id : null;
@@ -709,19 +893,23 @@
         
         sorted.forEach(row => {
             const rid    = row['受付ID'] || '';
-            if (!rid) return; // IDがない不正な行はスキップ
+            if (!rid) return;
             
+            // ユーザーIDとLINE名をキャッシュ
+            ridToUserIdMap[rid]   = String(row['ユーザーID']  || '').trim();
+            ridToLineNameMap[rid] = String(row['LINE名']       || '').trim();
+
             const isDone = row['ステータス'] === '確認済' || pendingCheckIds.has(rid);
-            // ★追加：サーバーに反映されたことを確認できたら保護を解除する
             if (row['ステータス'] === '確認済' && pendingCheckIds.has(rid)) {
                 pendingCheckIds.delete(rid);
             }
             let tr = tbody.querySelector(`tr[data-rid="${CSS.escape(rid)}"]`);
 
-            const rawPatientName = row['患者名'] ? String(row['患者名']).trim() : '';
+            const rawPatientName   = row['患者名'] ? String(row['患者名']).trim() : '';
             const displayPatientName = rawPatientName ? `${rawPatientName} 様` : '（未登録）';
+            const lineNameText     = String(row['LINE名'] || '').trim();
 
-            // ── 処方箋 ──
+            // ── 処方箋 HTML ──
             let prescriptionHtml = '';
             const rawContent = row['テキスト / 画像URL'] || '';
             if (String(rawContent).startsWith('http')) {
@@ -756,14 +944,11 @@
                 }
             }
 
-            // 受付（確認完了）列のHTML（「✅確認済」に修正）
             const actionHtml = isDone 
                 ? `<span style="color:#22c55e; font-weight:bold;">✅確認済</span>` 
                 : `<button class="btn-check" onclick="checkRow('${rid}', this)">確認完了</button>`;
 
-            // ★修正ポイント：スプレッドシートの見出し「通知」に対応
             const isNoticeSent = (row['通知'] === '通知済' || localNoticeSentIds.has(rid));
-            // ★修正：未通知の場合は「💬 通知」ボタンに加えて「通知せず完了」ボタンも表示する
             const noticeHtml = isNoticeSent
                 ? `<button class="btn-notice sent" onclick="sendLineNotice('${rid}')">通知済</button>`
                 : `<div class="notice-btn-group">
@@ -771,17 +956,23 @@
                        <button class="btn-skip-notice" onclick="markDoneWithoutNotice('${rid}')" title="来局済みなど、LINE通知が不要な場合に使用します">通知せず完了</button>
                    </div>`;
 
+            // ── 患者名列 HTML（クリック可能な上部＋インライン編集の下部） ──
+            const patientColHtml = `
+                <div class="patient-info-clickable" onclick="openPatientInfoModal('${rid}')">
+                    <div class="patient-name-display">${displayPatientName}</div>
+                    <div class="line-name-sub">LINE: ${escapeHtmlAttr(lineNameText)}</div>
+                    <span id="handover-badge-${rid}" class="handover-badge" style="display:none;">📋 申し送りあり</span>
+                    <div class="hover-hint">クリックで詳細・編集</div>
+                </div>
+                <div class="inline-edit-wrap">
+                    <input type="text" id="pinput-${rid}" class="patient-input" value="${escapeHtmlAttr(rawPatientName)}" placeholder="患者名を入力...">
+                    <button class="btn-save-inline btn-blue" onclick="savePatientNameOnly('${rid}')">名前保存</button>
+                    <span id="pok-${rid}" class="save-ok">✓</span>
+                </div>`;
+
             const rowInnerHTML = `
                 <td class="col-date">${row['日時'] || ''}</td>
-                <td class="col-patient">
-                    <div class="patient-name-display">${displayPatientName}</div>
-                    <div class="line-name-sub">LINE: ${row['LINE名'] || ''}</div>
-                    <div class="inline-edit-wrap">
-                        <input type="text" id="pinput-${rid}" class="patient-input" value="${escapeHtmlAttr(rawPatientName)}" placeholder="患者名を入力...">
-                        <button class="btn-save-inline btn-blue" onclick="savePatientNameOnly('${rid}')">名前保存</button>
-                        <span id="pok-${rid}" class="save-ok">✓</span>
-                    </div>
-                </td>
+                <td class="col-patient">${patientColHtml}</td>
                 <td class="col-repno">
                     <div class="inline-edit-wrap">
                         <input type="text" id="noinput-${rid}" class="no-input" value="${escapeHtmlAttr(row['受付番号'] || '')}" placeholder="—">
@@ -801,20 +992,18 @@
                 tr.innerHTML = rowInnerHTML;
                 tbody.appendChild(tr);
             } else {
-                const pInput = tr.querySelector(`#pinput-${rid}`);
+                const pInput  = tr.querySelector(`#pinput-${rid}`);
                 const noInput = tr.querySelector(`#noinput-${rid}`);
                 
                 tr.querySelector('.col-prescription').innerHTML = prescriptionHtml;
-                tr.querySelector('.col-action').innerHTML = actionHtml;
-                tr.querySelector('.col-notice').innerHTML = noticeHtml;
+                tr.querySelector('.col-action').innerHTML       = actionHtml;
+                tr.querySelector('.col-notice').innerHTML       = noticeHtml;
 
                 const pendingName = pendingPatientNameSaves[rid];
                 if (pendingName !== undefined) {
                     if (rawPatientName === pendingName) {
-                        // サーバー側に反映された。保護を解除して通常の同期に戻す
                         delete pendingPatientNameSaves[rid];
                     }
-                    // まだサーバーに反映されていない間は、古い値で上書きしない（何もしない）
                 } else if (pInput && !pInput.matches(':focus')) {
                     pInput.value = rawPatientName;
                     tr.querySelector('.patient-name-display').textContent = displayPatientName;
@@ -822,9 +1011,8 @@
                 const pendingNo = pendingReceptionNoSaves[rid];
                 if (pendingNo !== undefined) {
                     if (String(row['受付番号'] || '') === pendingNo) {
-                        delete pendingReceptionNoSaves[rid]; // サーバーに反映された
+                        delete pendingReceptionNoSaves[rid];
                     }
-                    // まだ反映されていない間は古い値で上書きしない
                 } else if (noInput && !noInput.matches(':focus')) {
                     if (row['受付番号'] !== undefined) {
                         noInput.value = row['受付番号'] || '';
@@ -833,47 +1021,47 @@
             }
             tr.classList.toggle('done', isDone);
 
-            // ── ここから差し替え ──
-            // 処方箋の列（.col-prescription）を取得
+            // 申し送りバッジの状態を非同期で反映
+            // （バッジはモーダル開閉時・保存時に即時更新するが、
+            //   画面初期表示や他端末での変更をページ読み込み時に同期するため）
+            const badgeEl = document.getElementById(`handover-badge-${rid}`);
+            if (badgeEl) {
+                const userId = ridToUserIdMap[rid];
+                if (userId && !tr.dataset.handoverFetched) {
+                    tr.dataset.handoverFetched = '1';
+                    fetch(`${GAS_URL}?getPatientInfo=true&userId=${encodeURIComponent(userId)}`)
+                        .then(r => r.json())
+                        .then(d => {
+                            if (d.status === 'success' && d.info.handover) {
+                                badgeEl.textContent  = '📋 申し送りあり';
+                                badgeEl.style.display = 'inline-block';
+                            } else {
+                                badgeEl.style.display = 'none';
+                            }
+                        })
+                        .catch(() => {});
+                }
+            }
+
+            // 処方箋列クリックで画像・テキストを開く
             const prescriptionTd = tr.querySelector('.col-prescription');
             if (prescriptionTd) {
-                prescriptionTd.style.cursor = 'pointer'; // 処方箋の列だけポインタを変える
-
+                prescriptionTd.style.cursor = 'pointer';
                 prescriptionTd.addEventListener('click', (e) => {
-                    // 処方箋列の中のボタン自体をクリックした場合は、二重動作を防ぐためここで何もしない
-                    if (e.target.closest('button')) {
-                        return;
-                    }
-
-                    // 1. テキストが長い場合の「全文確認」ボタンがあればクリック
+                    if (e.target.closest('button')) return;
                     const textMoreBtn = prescriptionTd.querySelector('.btn-text-more');
-                    if (textMoreBtn) {
-                        textMoreBtn.click();
-                        return;
-                    }
-
-                    // 2. 複数枚画像、または単枚画像のボタンがあればクリック
-                    const imgAllBtn = prescriptionTd.querySelector('.img-link-all');
+                    if (textMoreBtn) { textMoreBtn.click(); return; }
+                    const imgAllBtn    = prescriptionTd.querySelector('.img-link-all');
                     const imgSingleBtn = prescriptionTd.querySelector('.img-link');
-                    if (imgAllBtn) {
-                        imgAllBtn.click();
-                        return;
-                    } else if (imgSingleBtn) {
-                        imgSingleBtn.click();
-                        return;
-                    }
-
-                    // 3. 【追加機能】文字数が少なくてボタンがないテキストの場合
-                    // rawContent（元のテキスト）をそのままテキストモーダルで開く
+                    if (imgAllBtn)    { imgAllBtn.click(); return; }
+                    else if (imgSingleBtn) { imgSingleBtn.click(); return; }
                     if (rawContent && !String(rawContent).startsWith('http')) {
                         openTextModal(rawContent);
                     }
                 });
             }
-            // ── ここまで差し替え ──
         });
 
-        // ★変更
         const currentOrder = Array.from(tbody.children).map(tr => tr.dataset.rid || '');
         const targetOrder  = [...currentOrder].sort((a, b) => b.localeCompare(a));
         const alreadySorted = currentOrder.every((id, i) => id === targetOrder[i]);
@@ -887,15 +1075,13 @@
                 const el = document.getElementById(savedFocusId);
                 if (el) {
                     el.focus();
-                    if (savedSelStart !== null) {
-                        el.setSelectionRange(savedSelStart, savedSelEnd);
-                    }
+                    if (savedSelStart !== null) el.setSelectionRange(savedSelStart, savedSelEnd);
                 }
             }
         }
     }
 
-    // ===== テキスト専用モーダル制御 =====
+    // ===== テキスト専用モーダル =====
     function openTextModal(text) {
         document.getElementById('textModalContent').textContent = text;
         document.getElementById('textModal').classList.add('open');
@@ -904,7 +1090,7 @@
         document.getElementById('textModal').classList.remove('open');
     }
 
-    // ===== 画像モーダル制御 =====
+    // ===== 画像モーダル =====
     let modalUrls = [], modalIndex = 0;
     const imgModal     = document.getElementById('imgModal');
     const previewFrame = document.getElementById('previewFrame');
@@ -919,10 +1105,8 @@
         return m ? `https://drive.google.com/file/d/${m[1]}/preview` : url;
     }
     function openModal(urls, startIndex = 0) {
-        modalUrls = urls;
-        modalIndex = startIndex;
-        imgModal.classList.add('open');
-        renderModal();
+        modalUrls = urls; modalIndex = startIndex;
+        imgModal.classList.add('open'); renderModal();
         document.addEventListener('keydown', onModalKey);
     }
     function closeImgModal() {
@@ -955,44 +1139,34 @@
     window.addEventListener('click', e => {
         if (e.target === imgModal) closeImgModal();
         if (e.target === document.getElementById('textModal')) closeTextModal();
-        // 枠外クリックで閉じないようにコメントアウト
-        // if (e.target === document.getElementById('noticeModal')) closeNoticeModal();
+        if (e.target === document.getElementById('chatLogModal')) closeChatLogModal();
+        if (e.target === document.getElementById('handoverAlertModal')) closeHandoverAlert();
+        // patientInfoModal・noticeModal は枠外クリックで閉じない
     });
 
     // ===== 起動 =====
     fetchData();
     setInterval(fetchData, 10000);
 
-    // ===== 追加・修正：通知漏れアラートの制御ロジック =====
-    let leakMuteUntil = 0; // 消音の終了時刻を保持する変数（ミリ秒）
-    let leakFetchController = null; // ★追加：進行中のチェック用fetchを中断できるようにする
+    // ===== 通知漏れアラート =====
+    let leakMuteUntil = 0;
+    let leakFetchController = null;
     
-    // ★追加：5分間消音ボタンが押された時の処理
     function muteLeakAlertFor5Min() {
-        const now = Date.now();
-        leakMuteUntil = now + (5 * 60 * 1000);
-    
-        if (leakFetchController) {
-            leakFetchController.abort();
-            leakFetchController = null;
-        }
-    
+        leakMuteUntil = Date.now() + (5 * 60 * 1000);
+        if (leakFetchController) { leakFetchController.abort(); leakFetchController = null; }
         document.getElementById('leakAlertBanner').style.display = 'none';
         stopLeakAlert();
-        console.log('通知漏れアラートを5分間消音しました。');
     }
     
-    // ★修正：定期チェック関数（消音中かどうかの判定を追加）
     function checkNotificationLeak() {
         if (Date.now() < leakMuteUntil) {
             document.getElementById('leakAlertBanner').style.display = 'none';
-            stopLeakAlert(); // ★追加
+            stopLeakAlert();
             return;
         }
     
-        if (leakFetchController) {
-            leakFetchController.abort();
-        }
+        if (leakFetchController) leakFetchController.abort();
         leakFetchController = new AbortController();
         const { signal } = leakFetchController;
     
@@ -1001,78 +1175,62 @@
             .then(result => {
                 leakFetchController = null;
                 if (Date.now() < leakMuteUntil) return;
-    
-                const banner = document.getElementById('leakAlertBanner');
+                const banner   = document.getElementById('leakAlertBanner');
                 const nameSpan = document.getElementById('leakPatientNames');
-    
                 if (result.status === 'success' && result.leak) {
                     banner.style.display = 'block';
                     nameSpan.innerText = '対象：' + result.patients.join(', ');
-                    startLeakAlert(); // ★追加
+                    startLeakAlert();
                 } else {
                     banner.style.display = 'none';
-                    stopLeakAlert(); // ★追加
+                    stopLeakAlert();
                 }
             })
             .catch(err => {
-                if (err.name !== 'AbortError') {
-                    console.error('通知漏れチェックエラー:', err);
-                }
+                if (err.name !== 'AbortError') console.error('通知漏れチェックエラー:', err);
             });
     }
     
-    // 5秒ごとにバックグラウンドで通知漏れがないかチェック
     setInterval(checkNotificationLeak, 5000);
     checkNotificationLeak();
 
+    // ===== チャットログ =====
     let activeChatLogUserId = null;
 
     function toDateInputValue(d) {
-        const y = d.getFullYear();
-        const m = String(d.getMonth() + 1).padStart(2, '0');
-        const day = String(d.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
     }
     
     function openChatLog(userId) {
         if (!userId) return;
         activeChatLogUserId = userId;
-    
-        const end = new Date();
-        const start = new Date();
+        const end = new Date(), start = new Date();
         start.setMonth(start.getMonth() - 3);
         document.getElementById('chatLogStart').value = toDateInputValue(start);
-        document.getElementById('chatLogEnd').value = toDateInputValue(end);
-    
+        document.getElementById('chatLogEnd').value   = toDateInputValue(end);
         document.getElementById('chatLogModal').classList.add('open');
         fetchChatLog();
     }
-    
     function closeChatLogModal() {
         document.getElementById('chatLogModal').classList.remove('open');
         activeChatLogUserId = null;
     }
-    
     document.getElementById('chatLogSearchBtn').addEventListener('click', fetchChatLog);
     
     async function fetchChatLog() {
         if (!activeChatLogUserId) return;
         const container = document.getElementById('chatLogContainer');
         container.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:13px;">読み込み中...</div>';
-    
         const start = document.getElementById('chatLogStart').value;
         const end   = document.getElementById('chatLogEnd').value;
-    
         try {
             const params = new URLSearchParams({ chatLog: 'true', userId: activeChatLogUserId, start, end });
             const res = await fetch(`${GAS_URL}?${params.toString()}`);
             const data = await res.json();
-    
             if (data.status !== 'success' || !data.records.length) {
                 container.innerHTML = '<div style="text-align:center; color:#94a3b8; font-size:13px;">この期間のやり取りはありません。</div>';
                 return;
             }
-    
             container.innerHTML = data.records.map(renderChatBubble).join('');
             container.scrollTop = container.scrollHeight;
         } catch (err) {
@@ -1083,7 +1241,6 @@
     
     function renderChatBubble(r) {
         if (r.type === 'staff') {
-            // ★追加：「通知せず完了」で記録されたログは、実際にLINEへ送信したメッセージと区別して表示する
             const isNoSend = typeof r.text === 'string' && r.text.indexOf('【LINE通知なしで完了処理】') === 0;
             if (isNoSend) {
                 return `
@@ -1106,7 +1263,6 @@
                     <div class="chat-time">${escapeHtmlAttr(r.time)}</div>
                 </div>`;
         }
-        // patient_text
         return `
             <div class="chat-row from-patient">
                 <div class="chat-bubble">${escapeHtmlAttr(r.text)}</div>
