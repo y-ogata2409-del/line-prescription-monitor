@@ -674,6 +674,9 @@
     };
 
     function sendLineNotice(receptionId) {
+        // ↓ この2行を追加
+        document.getElementById('leakAlertBanner').style.display = 'none';
+        stopLeakAlert();
         activeNoticeReceptionId = receptionId;
 
         const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
