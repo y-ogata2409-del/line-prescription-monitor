@@ -480,7 +480,9 @@
     const statusDot   = document.getElementById('statusDot');
     const muteMasterBtn = document.getElementById('muteMasterBtn');
     let leakingUserIds = new Set();
-    let leakingPatientNameByUserId = {};   // ★追加：userId → 表示名 のマップ
+    let leakingPatientNameByUserId = {};
+    let suppressedLeakUserIds = new Map();   // ★追加：userId → 抑制解除予定時刻
+    const LEAK_SUPPRESS_MS = 20000;          // ★追加：サーバー反映待ちの猶予（20秒）
 
     // ===== HTML属性用安全エスケープ関数 =====
     function escapeHtmlAttr(str) {
@@ -1168,38 +1170,69 @@
         if (leakFetchController) leakFetchController.abort();
         leakFetchController = new AbortController();
         const { signal } = leakFetchController;
-
+    
         fetch(`${GAS_URL}?checkLeak=true`, { signal })
             .then(response => response.json())
             .then(result => {
                 leakFetchController = null;
                 const banner   = document.getElementById('leakAlertBanner');
                 const nameSpan = document.getElementById('leakPatientNames');
-
+                const now = Date.now();
+    
+                // ★追加：抑制期限切れのエントリを掃除
+                suppressedLeakUserIds.forEach((expireAt, uid) => {
+                    if (now >= expireAt) suppressedLeakUserIds.delete(uid);
+                });
+    
                 if (result.status === 'success' && result.leak) {
-                    banner.style.display = 'block';
-                    nameSpan.innerText = '対象：' + result.patients.join(', ');
-                    leakingUserIds = new Set(result.userIds || []);
-                
-                    // ★追加：userId → 表示名 のマップを構築
-                    leakingPatientNameByUserId = {};
-                    (result.userIds || []).forEach((uid, idx) => {
-                        leakingPatientNameByUserId[uid] = (result.patients || [])[idx] || '名前未設定の患者';
+                    const rawUserIds  = result.userIds  || [];
+                    const rawPatients = result.patients || [];
+    
+                    // ★追加：抑制中でないものだけを残す
+                    const filteredUserIds  = [];
+                    const filteredPatients = [];
+                    rawUserIds.forEach((uid, idx) => {
+                        if (suppressedLeakUserIds.has(uid)) return; // まだ抑制中なのでスキップ
+                        filteredUserIds.push(uid);
+                        filteredPatients.push(rawPatients[idx]);
                     });
-                
-                    applyLeakRowHighlights();
-                
-                    if (Date.now() < leakMuteUntil) {
-                        stopLeakAlert();
+    
+                    // ★追加：サーバー側で既に解消が確認できた抑制エントリは早めに解除
+                    suppressedLeakUserIds.forEach((_, uid) => {
+                        if (!rawUserIds.includes(uid)) suppressedLeakUserIds.delete(uid);
+                    });
+    
+                    if (filteredUserIds.length > 0) {
+                        banner.style.display = 'block';
+                        nameSpan.innerText = '対象：' + filteredPatients.join(', ');
+                        leakingUserIds = new Set(filteredUserIds);
+    
+                        leakingPatientNameByUserId = {};
+                        filteredUserIds.forEach((uid, idx) => {
+                            leakingPatientNameByUserId[uid] = filteredPatients[idx] || '名前未設定の患者';
+                        });
+    
+                        applyLeakRowHighlights();
+    
+                        if (now < leakMuteUntil) {
+                            stopLeakAlert();
+                        } else {
+                            startLeakAlert();
+                        }
                     } else {
-                        startLeakAlert();
+                        banner.style.display = 'none';
+                        stopLeakAlert();
+                        leakingUserIds = new Set();
+                        leakingPatientNameByUserId = {};
+                        applyLeakRowHighlights();
                     }
                 } else {
                     banner.style.display = 'none';
                     stopLeakAlert();
                     leakingUserIds = new Set();
-                    leakingPatientNameByUserId = {};   // ★追加
+                    leakingPatientNameByUserId = {};
                     applyLeakRowHighlights();
+                    suppressedLeakUserIds.clear();   // ★追加：漏れなし確定なので抑制も全解除
                 }
             })
             .catch(err => {
@@ -1294,19 +1327,21 @@
     }
     function clearLeakStateForUser(userId) {
         if (!userId) return;
+    
+        // ★追加：サーバー側のフラグクリアが反映されるまで、このユーザーの再検知を抑制
+        suppressedLeakUserIds.set(userId, Date.now() + LEAK_SUPPRESS_MS);
+    
         leakingUserIds.delete(userId);
         delete leakingPatientNameByUserId[userId];
-        applyLeakRowHighlights();   // 行の点滅を即座に解除
+        applyLeakRowHighlights();
     
         const banner   = document.getElementById('leakAlertBanner');
         const nameSpan = document.getElementById('leakPatientNames');
     
         if (leakingUserIds.size === 0) {
-            // 他に未通知の患者がいなければバナー・音も止める
             banner.style.display = 'none';
             stopLeakAlert();
         } else {
-            // 他にまだ未通知の患者がいればバナー文言だけ更新して表示は継続
             nameSpan.innerText = '対象：' + Object.values(leakingPatientNameByUserId).join(', ');
         }
     }
