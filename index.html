@@ -267,6 +267,14 @@
             font-weight: bold; cursor: pointer;
         }
         .btn-handover-ok:hover { background: #d97706; }
+        /* ===== 通知漏れ：対象行ハイライト ===== */
+        tr.leak-row td {
+            animation: leakRowPulse 1.2s infinite ease-in-out;
+        }
+        @keyframes leakRowPulse {
+            0%, 100% { background-color: rgba(239,68,68,0.15); }
+            50%      { background-color: rgba(239,68,68,0.45); }
+        }
     </style>
 </head>
 <body>
@@ -471,6 +479,7 @@
     const statusText  = document.getElementById('statusText');
     const statusDot   = document.getElementById('statusDot');
     const muteMasterBtn = document.getElementById('muteMasterBtn');
+    let leakingUserIds = new Set();
 
     // ===== HTML属性用安全エスケープ関数 =====
     function escapeHtmlAttr(str) {
@@ -1076,6 +1085,7 @@
                 }
             }
         }
+        applyLeakRowHighlights();
     }
 
     // ===== テキスト専用モーダル =====
@@ -1151,36 +1161,39 @@
     
     function muteLeakAlertFor5Min() {
         leakMuteUntil = Date.now() + (5 * 60 * 1000);
-        if (leakFetchController) { leakFetchController.abort(); leakFetchController = null; }
-        document.getElementById('leakAlertBanner').style.display = 'none';
+        // バナー・行ハイライトは消さない。音だけ止める。
         stopLeakAlert();
     }
     
     function checkNotificationLeak() {
-        if (Date.now() < leakMuteUntil) {
-            document.getElementById('leakAlertBanner').style.display = 'none';
-            stopLeakAlert();
-            return;
-        }
-    
         if (leakFetchController) leakFetchController.abort();
         leakFetchController = new AbortController();
         const { signal } = leakFetchController;
-    
+
         fetch(`${GAS_URL}?checkLeak=true`, { signal })
             .then(response => response.json())
             .then(result => {
                 leakFetchController = null;
-                if (Date.now() < leakMuteUntil) return;
                 const banner   = document.getElementById('leakAlertBanner');
                 const nameSpan = document.getElementById('leakPatientNames');
+
                 if (result.status === 'success' && result.leak) {
                     banner.style.display = 'block';
                     nameSpan.innerText = '対象：' + result.patients.join(', ');
-                    startLeakAlert();
+                    leakingUserIds = new Set(result.userIds || []);
+                    applyLeakRowHighlights();
+
+                    // ミュート中は音だけ鳴らさない（バナー・行ハイライトは表示し続ける）
+                    if (Date.now() < leakMuteUntil) {
+                        stopLeakAlert();
+                    } else {
+                        startLeakAlert();
+                    }
                 } else {
                     banner.style.display = 'none';
                     stopLeakAlert();
+                    leakingUserIds = new Set();
+                    applyLeakRowHighlights();
                 }
             })
             .catch(err => {
@@ -1265,6 +1278,13 @@
                 <div class="chat-bubble">${escapeHtmlAttr(r.text)}</div>
                 <div class="chat-time">${escapeHtmlAttr(r.time)}</div>
             </div>`;
+    }
+    function applyLeakRowHighlights() {
+        document.querySelectorAll('#dataTable tbody tr').forEach(tr => {
+            const rid = tr.dataset.rid;
+            const uid = ridToUserIdMap[rid];
+            tr.classList.toggle('leak-row', leakingUserIds.size > 0 && leakingUserIds.has(uid));
+        });
     }
 </script>
 </body>
