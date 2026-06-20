@@ -289,6 +289,16 @@
     </button>
 </div>
 
+<div id="triggerAlertBanner" style="display: none; background: #7c3aed; color: white; padding: 15px 20px; border-radius: 8px; margin-bottom: 20px; font-weight: bold; font-size: 16px; box-shadow: 0 4px 12px rgba(124,58,237,0.3); position: relative;">
+    <div style="margin-right: 140px;">
+        ⚙️ 【自動処理停止の可能性】1分ごとの自動完了トリガーが、しばらく実行されていません。
+        <span id="triggerAlertDetail" style="display: block; font-size: 14px; margin-top: 5px; background: rgba(0,0,0,0.15); padding: 5px 10px; border-radius: 4px;"></span>
+    </div>
+    <button id="triggerRestartBtn" onclick="restartTriggerFromUI()" style="position: absolute; right: 20px; top: 50%; transform: translateY(-50%); background: rgba(255,255,255,0.2); border: 1px solid white; color: white; padding: 8px 14px; border-radius: 4px; cursor: pointer; font-size: 13px; font-weight: bold;">
+        🔄 再開する
+    </button>
+</div>
+
 <h1>💊 LINE処方箋受付 受信モニター</h1>
 <div id="shopName" class="shop-badge">店舗コード未指定</div>
 
@@ -1345,6 +1355,56 @@
             nameSpan.innerText = '対象：' + Object.values(leakingPatientNameByUserId).join(', ');
         }
     }
+    let isTriggerRestarting = false;
+
+    function checkTriggerHealth() {
+        fetch(`${GAS_URL}?checkTriggerHealth=true`)
+            .then(res => res.json())
+            .then(result => {
+                const banner = document.getElementById('triggerAlertBanner');
+                const detail = document.getElementById('triggerAlertDetail');
+                if (result.status === 'success' && !result.healthy) {
+                    banner.style.display = 'block';
+                    detail.innerText = `最終実行: ${result.lastRunTime || '記録なし'}（約${result.elapsedMinutes}分前）`;
+                } else {
+                    banner.style.display = 'none';
+                }
+            })
+            .catch(err => console.error('トリガー健全性チェックエラー:', err));
+    }
+    
+    function restartTriggerFromUI() {
+        if (isTriggerRestarting) return;
+        if (!confirm('1分ごとの自動処理トリガーを再作成します。よろしいですか？')) return;
+    
+        isTriggerRestarting = true;
+        const btn = document.getElementById('triggerRestartBtn');
+        btn.disabled = true;
+        btn.innerText = '処理中...';
+    
+        fetch(`${GAS_URL}?restartTrigger=true`)
+            .then(res => res.json())
+            .then(result => {
+                if (result.status === 'success') {
+                    alert('トリガーを再作成しました。再開連絡メールを送信しています。');
+                    document.getElementById('triggerAlertBanner').style.display = 'none';
+                } else {
+                    alert('再開処理に失敗しました：\n' + (result.error || '不明なエラー'));
+                }
+            })
+            .catch(err => {
+                console.error(err);
+                alert('通信エラーが発生しました。');
+            })
+            .finally(() => {
+                isTriggerRestarting = false;
+                btn.disabled = false;
+                btn.innerText = '🔄 再開する';
+            });
+    }
+    
+    setInterval(checkTriggerHealth, 30000);
+    checkTriggerHealth();
 </script>
 </body>
 </html>
