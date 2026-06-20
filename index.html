@@ -480,6 +480,7 @@
     const statusDot   = document.getElementById('statusDot');
     const muteMasterBtn = document.getElementById('muteMasterBtn');
     let leakingUserIds = new Set();
+    let leakingPatientNameByUserId = {};   // ★追加：userId → 表示名 のマップ
 
     // ===== HTML属性用安全エスケープ関数 =====
     function escapeHtmlAttr(str) {
@@ -736,8 +737,7 @@
         const receptionId = activeNoticeReceptionId;
         closeNoticeModal();
 
-        document.getElementById('leakAlertBanner').style.display = 'none';
-        stopLeakAlert();
+        clearLeakStateForUser(ridToUserIdMap[receptionId]);
 
         localNoticeSentIds.add(receptionId);
         const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
@@ -808,8 +808,7 @@
     function markDoneWithoutNotice(receptionId) {
         if (!confirm('LINE通知を送信せずに、この受付を「通知済」として完了させます。\n（患者様が既に来局されている場合など、通知が不要なケースでご利用ください）\n\nよろしいですか？')) return;
 
-        document.getElementById('leakAlertBanner').style.display = 'none';
-        stopLeakAlert();
+        clearLeakStateForUser(ridToUserIdMap[receptionId]);
 
         localNoticeSentIds.add(receptionId);
         const tr = document.querySelector(`tr[data-rid="${CSS.escape(receptionId)}"]`);
@@ -1181,9 +1180,15 @@
                     banner.style.display = 'block';
                     nameSpan.innerText = '対象：' + result.patients.join(', ');
                     leakingUserIds = new Set(result.userIds || []);
+                
+                    // ★追加：userId → 表示名 のマップを構築
+                    leakingPatientNameByUserId = {};
+                    (result.userIds || []).forEach((uid, idx) => {
+                        leakingPatientNameByUserId[uid] = (result.patients || [])[idx] || '名前未設定の患者';
+                    });
+                
                     applyLeakRowHighlights();
-
-                    // ミュート中は音だけ鳴らさない（バナー・行ハイライトは表示し続ける）
+                
                     if (Date.now() < leakMuteUntil) {
                         stopLeakAlert();
                     } else {
@@ -1193,6 +1198,7 @@
                     banner.style.display = 'none';
                     stopLeakAlert();
                     leakingUserIds = new Set();
+                    leakingPatientNameByUserId = {};   // ★追加
                     applyLeakRowHighlights();
                 }
             })
@@ -1285,6 +1291,24 @@
             const uid = ridToUserIdMap[rid];
             tr.classList.toggle('leak-row', leakingUserIds.size > 0 && leakingUserIds.has(uid));
         });
+    }
+    function clearLeakStateForUser(userId) {
+        if (!userId) return;
+        leakingUserIds.delete(userId);
+        delete leakingPatientNameByUserId[userId];
+        applyLeakRowHighlights();   // 行の点滅を即座に解除
+    
+        const banner   = document.getElementById('leakAlertBanner');
+        const nameSpan = document.getElementById('leakPatientNames');
+    
+        if (leakingUserIds.size === 0) {
+            // 他に未通知の患者がいなければバナー・音も止める
+            banner.style.display = 'none';
+            stopLeakAlert();
+        } else {
+            // 他にまだ未通知の患者がいればバナー文言だけ更新して表示は継続
+            nameSpan.innerText = '対象：' + Object.values(leakingPatientNameByUserId).join(', ');
+        }
     }
 </script>
 </body>
