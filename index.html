@@ -522,6 +522,11 @@
     });
     muteMasterBtn.addEventListener('click', triggerMute);
 
+    // ↓ ここに追加
+    document.addEventListener('mousemove', () => {
+        if (isAlerting) triggerMute();
+    });
+    
     // ===== アラート制御 =====
     function startAlert() {
         if (isAlerting || !isAudioEnabled || Date.now() < muteUntilTime) return;
